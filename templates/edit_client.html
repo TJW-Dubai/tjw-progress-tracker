@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Edit Client — {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7 col-lg-6">
+
+  <div class="mb-1">
+    <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
+      &#8592; Back to {{ client.name }}
+    </a>
+  </div>
+  <h3 class="mb-1">Edit Client</h3>
+  <p class="text-muted mb-4">Update {{ client.name }}'s details and weekly targets.</p>
+
+  <form method="post">
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Client Details</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Client Name</label>
+          <input type="text" class="form-control" name="client_name"
+                 value="{{ client.name }}" required>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="start_date"
+                   value="{{ client.start_date.isoformat() }}" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">End Date <span class="text-muted small">(optional)</span></label>
+            <input type="date" class="form-control" name="end_date"
+                   value="{{ client.end_date.isoformat() if client.end_date else '' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Module Milestones</div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_1" id="m1"
+                   {{ 'checked' if client.module_1_done }}>
+            <label class="form-check-label" for="m1"><strong>Module 1:</strong> CV Optimisation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_2" id="m2"
+                   {{ 'checked' if client.module_2_done }}>
+            <label class="form-check-label" for="m2"><strong>Module 2:</strong> LinkedIn Optimisation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_3" id="m3"
+                   {{ 'checked' if client.module_3_done }}>
+            <label class="form-check-label" for="m3"><strong>Module 3:</strong> Content Ideation</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Weekly Targets</div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for b in global_bl %}
+          <div class="col-6">
+            <label class="form-label mb-1">
+              {{ b.label }}
+              <span class="text-muted small">(suggested: {{ b.suggested }})</span>
+            </label>
+            <input type="number" class="form-control" name="bl_{{ b.activity }}"
+                   value="{{ cb_map.get(b.activity, b.value) }}" min="0">
+          </div>
+          {% endfor %}
+          <div class="col-6">
+            <label class="form-label mb-1 text-muted">Follow-ups</label>
+            <input type="text" class="form-control bg-light" value="2 × applications (auto)" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1">Save Changes</button>
+      <a href="/client/{{ client.id }}/weeks" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+
+    <div class="mt-3 pt-3 border-top">
+      <form action="/client/{{ client.id }}/archive" method="post"
+            onsubmit="return confirm('Archive {{ client.name }}? They will be hidden from active view.')">
+        <button type="submit" class="btn btn-outline-danger btn-sm">Archive Client</button>
+      </form>
+    </div>
+
+  </form>
+</div>
+</div>
+{% endblock %}

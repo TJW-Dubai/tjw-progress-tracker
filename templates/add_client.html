@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Add Client — {{ coach_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7 col-lg-6">
+
+  <div class="mb-1">
+    <a href="/coach/{{ coach_name }}" class="text-muted text-decoration-none small">&#8592; Back to {{ coach_name }}</a>
+  </div>
+  <h3 class="mb-1">Add New Client</h3>
+  <p class="text-muted mb-4">Fill in the client's details and set their weekly targets.</p>
+
+  <form method="post">
+
+    <!-- Basic info -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Client Details</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Client Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="client_name" required
+                 placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" name="start_date"
+                   value="{{ today }}" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label">
+              End Date <span class="text-muted small">(optional)</span>
+            </label>
+            <input type="date" class="form-control" name="end_date">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Module Milestones</div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">Check any modules already completed when onboarding this client.</p>
+        <div class="d-flex flex-wrap gap-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_1" id="m1">
+            <label class="form-check-label" for="m1"><strong>Module 1:</strong> CV Optimisation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_2" id="m2">
+            <label class="form-check-label" for="m2"><strong>Module 2:</strong> LinkedIn Optimisation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_3" id="m3">
+            <label class="form-check-label" for="m3"><strong>Module 3:</strong> Content Ideation</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-client baselines -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">
+        Weekly Targets
+        <small class="text-muted fw-normal ms-1">— pre-filled from global defaults, adjust per client</small>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for b in global_bl %}
+          <div class="col-6">
+            <label class="form-label mb-1">
+              {{ b.label }}
+              <span class="text-muted small">(suggested: {{ b.suggested }})</span>
+            </label>
+            <input type="number" class="form-control" name="bl_{{ b.activity }}"
+                   value="{{ b.value }}" min="0">
+          </div>
+          {% endfor %}
+          <div class="col-6">
+            <label class="form-label mb-1 text-muted">Follow-ups</label>
+            <input type="text" class="form-control bg-light" value="2 × applications (auto)" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1">Add Client</button>
+      <a href="/coach/{{ coach_name }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+
+  </form>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} — All Weeks{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <a href="/coach/{{ client.coach_name }}" class="text-muted text-decoration-none small">
+      &#8592; {{ client.coach_name }}
+    </a>
+    <h3 class="mb-0 mt-1">{{ client.name }}</h3>
+    <small class="text-muted">
+      Started {{ client.start_date.strftime('%d %b %Y') }}
+      {% if client.end_date %} · Ends {{ client.end_date.strftime('%d %b %Y') }}{% endif %}
+    </small>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/client/{{ client.id }}/report" class="btn btn-success btn-sm">&#8659; Download Report</a>
+    <a href="/client/{{ client.id }}/edit" class="btn btn-outline-secondary btn-sm">Edit Client</a>
+  </div>
+</div>
+
+<!-- Module status -->
+<div class="mb-4">
+  <span class="badge {{ 'bg-success' if client.module_1_done else 'bg-secondary' }} me-1">
+    M1: CV {{ '&#10003;' if client.module_1_done else '&#9675;' }}
+  </span>
+  <span class="badge {{ 'bg-success' if client.module_2_done else 'bg-secondary' }} me-1">
+    M2: LinkedIn {{ '&#10003;' if client.module_2_done else '&#9675;' }}
+  </span>
+  <span class="badge {{ 'bg-success' if client.module_3_done else 'bg-secondary' }}">
+    M3: Content {{ '&#10003;' if client.module_3_done else '&#9675;' }}
+  </span>
+</div>
+
+{% if weeks %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Week</th>
+          <th>Dates</th>
+          <th class="text-center">Comments<br><small class="text-muted fw-normal">{{ baselines.comments }}</small></th>
+          <th class="text-center">Posts<br><small class="text-muted fw-normal">{{ baselines.posts }}</small></th>
+          <th class="text-center">Outreach<br><small class="text-muted fw-normal">{{ baselines.outreach }}</small></th>
+          <th class="text-center">Apps<br><small class="text-muted fw-normal">{{ baselines.applications }}</small></th>
+          <th class="text-center">F/U</th>
+          <th class="text-center">Compliance</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in weeks %}
+        {% set log = w.log %}
+        <tr>
+          <td class="fw-medium">
+            Wk {{ loop.revindex }}
+          </td>
+          <td class="text-nowrap small">
+            {{ w.week_start.strftime('%d %b') }}–{{ w.week_end.strftime('%d %b') }}
+          </td>
+          {% if log %}
+          {% set s = w.statuses %}
+          <td class="text-center"><span class="badge bg-{{ s.comments }}">{{ log.comments }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.posts }}">{{ log.posts }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.outreach }}">{{ log.outreach }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.applications }}">{{ log.applications }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span></td>
+          <td class="text-center">
+            {% set ov = w.compliance %}
+            <span class="badge {{ 'bg-success' if ov >= 70 else 'bg-warning text-dark' if ov >= 50 else 'bg-danger' }}">
+              {{ ov }}%
+            </span>
+          </td>
+          {% else %}
+          <td colspan="6" class="text-center">
+            <span class="badge bg-secondary">Not logged</span>
+          </td>
+          {% endif %}
+          <td>
+            <a href="/client/{{ client.id }}/log/{{ w.week_start.isoformat() }}"
+               class="btn btn-sm {{ 'btn-outline-primary' if log else 'btn-outline-secondary' }}">
+              {{ 'Edit' if log else 'Log' }}
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mt-2">
+  <small class="text-muted">
+    <span class="badge bg-success">&#8805; 70%</span>&nbsp;
+    <span class="badge bg-warning text-dark">50–69%</span>&nbsp;
+    <span class="badge bg-danger">&lt; 50%</span>
+  </small>
+</div>
+
+{% else %}
+<p class="text-muted">No weeks generated yet — check the client's start date.</p>
+{% endif %}
+{% endblock %}

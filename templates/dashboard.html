@@ -2,121 +2,146 @@
 {% block title %}Founder Dashboard — TJW Tracker{% endblock %}
 
 {% block content %}
+
 <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
   <div>
     <h2 class="mb-0">Founder Dashboard</h2>
     <small class="text-muted">
-      Week of {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
+      {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
+      (Mon–Fri)
     </small>
   </div>
-</div>
-
-<!-- Coach summary row -->
-<div class="row g-3 mb-5">
-  {% for coach in coach_data %}
-  <div class="col-6 col-md-4 col-lg-2">
-    <div class="card text-center shadow-sm h-100">
-      <div class="card-body py-3 px-2">
-        <div class="fw-semibold">{{ coach.name }}</div>
-        <div class="display-6 mt-1 fw-bold
-          {{ 'text-success' if coach.logged == coach.total and coach.total > 0
-             else 'text-warning' if coach.logged > 0
-             else 'text-danger' }}">
-          {{ coach.logged }}/{{ coach.total }}
-        </div>
-        <small class="text-muted">clients logged</small>
-        {% if coach.total > 0 %}
-        <div class="progress mt-2" style="height: 5px;">
-          <div class="progress-bar {{ 'bg-success' if coach.logged == coach.total else 'bg-warning' }}"
-               style="width: {{ (coach.logged / coach.total * 100) | int }}%"></div>
-        </div>
-        {% endif %}
-      </div>
-    </div>
+  <!-- Week navigation -->
+  <div class="d-flex gap-1 align-items-center">
+    <a href="/dashboard?w={{ offset - 1 }}" class="btn btn-outline-secondary btn-sm">&#8592; Prev Week</a>
+    {% if offset < 0 %}
+    <a href="/dashboard?w={{ offset + 1 }}" class="btn btn-outline-secondary btn-sm">Next Week &#8594;</a>
+    {% elif offset == 0 %}
+    <span class="btn btn-outline-secondary btn-sm disabled">This Week</span>
+    {% endif %}
   </div>
-  {% endfor %}
 </div>
 
-<!-- Detailed breakdown per coach -->
-{% for coach in coach_data %}
+<!-- Consolidated compliance table -->
+<div class="card shadow-sm mb-5">
+  <div class="card-header fw-semibold bg-white d-flex justify-content-between align-items-center">
+    <span>Compliance Overview — All Coaches</span>
+    <small class="text-muted fw-normal">Red = below 70%</small>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm mb-0 text-center align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th class="text-start">Coach</th>
+          <th>M1<br><small class="fw-normal opacity-75">CV</small></th>
+          <th>M2<br><small class="fw-normal opacity-75">LinkedIn</small></th>
+          <th>M3<br><small class="fw-normal opacity-75">Content</small></th>
+          <th>Comments</th>
+          <th>Posts</th>
+          <th>Outreach</th>
+          <th>Apps</th>
+          <th>Follow-ups</th>
+          <th class="fw-bold">Overall</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in coach_rows %}
+        {% macro cell(v) %}
+        <td class="{{ 'table-danger fw-bold' if v < 70 else '' }}">
+          {{ v }}%
+        </td>
+        {% endmacro %}
+        <tr>
+          <td class="text-start fw-medium">{{ r.name }}</td>
+          {{ cell(r.m1) }}
+          {{ cell(r.m2) }}
+          {{ cell(r.m3) }}
+          {{ cell(r.acts.comments|int) }}
+          {{ cell(r.acts.posts|int) }}
+          {{ cell(r.acts.outreach|int) }}
+          {{ cell(r.acts.applications|int) }}
+          {{ cell(r.acts.follow_ups|int) }}
+          <td class="fw-bold {{ 'table-danger' if r.overall < 70 else 'table-success' }}">
+            {{ r.overall }}%
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer text-muted small bg-white">
+    Module columns = % of clients who completed that module &nbsp;·&nbsp;
+    Activity columns = aggregate actual vs target for {{ week_start.strftime('%d %b') }}–{{ week_end.strftime('%d %b') }}
+    (unlogged clients count as 0)
+  </div>
+</div>
+
+<!-- Per-coach client drill-down -->
+{% for r in coach_rows %}
 <div class="card mb-4 shadow-sm">
   <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
-    <strong>{{ coach.name }}</strong>
-    {% if coach.total == 0 %}
+    <strong>{{ r.name }}</strong>
+    {% if r.total == 0 %}
       <span class="badge bg-secondary">No clients</span>
-    {% elif coach.logged == coach.total %}
-      <span class="badge bg-success">&#10003; All logged this week</span>
+    {% elif r.logged == r.total %}
+      <span class="badge bg-success">&#10003; All {{ r.total }} logged</span>
     {% else %}
       <span class="badge bg-warning text-dark">
-        {{ coach.total - coach.logged }} client{{ 's' if (coach.total - coach.logged) != 1 }} not logged
+        {{ r.total - r.logged }} of {{ r.total }} not logged
       </span>
     {% endif %}
   </div>
 
-  {% if coach.clients %}
+  {% if r.client_rows %}
   <div class="table-responsive">
-    <table class="table table-sm table-hover mb-0">
+    <table class="table table-sm table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
           <th>Client</th>
           <th class="text-center">Modules</th>
-          <th class="text-center">
-            Comments<br><small class="text-muted fw-normal">{{ baselines.comments }}</small>
-          </th>
-          <th class="text-center">
-            Posts<br><small class="text-muted fw-normal">{{ baselines.posts }}</small>
-          </th>
-          <th class="text-center">
-            Outreach<br><small class="text-muted fw-normal">{{ baselines.outreach }}</small>
-          </th>
-          <th class="text-center">
-            Apps<br><small class="text-muted fw-normal">{{ baselines.applications }}</small>
-          </th>
-          <th class="text-center">
-            Follow-ups<br><small class="text-muted fw-normal">2&times;apps</small>
-          </th>
+          <th class="text-center">Comments</th>
+          <th class="text-center">Posts</th>
+          <th class="text-center">Outreach</th>
+          <th class="text-center">Apps</th>
+          <th class="text-center">Follow-ups</th>
+          <th class="text-center">Report</th>
         </tr>
       </thead>
       <tbody>
-        {% for item in coach.clients %}
-        {% set client = item.client %}
-        {% set log = item.log %}
+        {% for cr in r.client_rows %}
+        {% set c = cr.client %}
+        {% set log = cr.log %}
         <tr>
           <td>
-            <a href="/client/{{ client.id }}/history" class="text-decoration-none fw-medium">
-              {{ client.name }}
-            </a>
+            <a href="/client/{{ c.id }}/weeks" class="text-decoration-none fw-medium">{{ c.name }}</a>
           </td>
           <td class="text-center">
-            <span class="badge {{ 'bg-success' if client.module_1_done else 'bg-light text-dark border' }}"
-                  title="CV">M1</span>
-            <span class="badge {{ 'bg-success' if client.module_2_done else 'bg-light text-dark border' }}"
-                  title="LinkedIn">M2</span>
-            <span class="badge {{ 'bg-success' if client.module_3_done else 'bg-light text-dark border' }}"
-                  title="Content">M3</span>
+            <span class="badge {{ 'bg-success' if c.module_1_done else 'bg-light text-dark border' }}" title="CV">M1</span>
+            <span class="badge {{ 'bg-success' if c.module_2_done else 'bg-light text-dark border' }}" title="LinkedIn">M2</span>
+            <span class="badge {{ 'bg-success' if c.module_3_done else 'bg-light text-dark border' }}" title="Content">M3</span>
           </td>
-
           {% if log %}
-          {% set s = item.statuses %}
+          {% set s = cr.statuses %}
           <td class="text-center"><span class="badge bg-{{ s.comments }}">{{ log.comments }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.posts }}">{{ log.posts }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.outreach }}">{{ log.outreach }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.applications }}">{{ log.applications }}</span></td>
-          <td class="text-center">
-            <span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span>
-          </td>
+          <td class="text-center"><span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span></td>
           {% else %}
           <td colspan="5" class="text-center">
             <span class="badge bg-secondary">Not logged this week</span>
           </td>
           {% endif %}
+          <td class="text-center">
+            <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success py-0">&#8659;</a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <div class="card-body text-muted py-2">No active clients.</div>
+  <div class="card-body text-muted small py-2">No active clients.</div>
   {% endif %}
 </div>
 {% endfor %}
@@ -124,10 +149,10 @@
 <!-- Legend -->
 <div class="card shadow-sm">
   <div class="card-body py-2">
-    <small class="text-muted fw-semibold me-2">Legend:</small>
-    <span class="badge bg-success me-1">On track (&ge; target)</span>
-    <span class="badge bg-warning text-dark me-1">&ge; 70% of target</span>
-    <span class="badge bg-danger me-1">Behind (&lt; 70%)</span>
+    <small class="text-muted fw-semibold me-2">Activity legend:</small>
+    <span class="badge bg-success me-1">&#8805; target</span>
+    <span class="badge bg-warning text-dark me-1">&#8805; 70%</span>
+    <span class="badge bg-danger me-1">&lt; 70%</span>
     <span class="badge bg-secondary">Not logged</span>
   </div>
 </div>

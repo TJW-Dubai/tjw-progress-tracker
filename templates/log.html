@@ -6,15 +6,33 @@
 <div class="col-md-7 col-lg-6">
 
   <div class="mb-1">
-    <a href="/coach/{{ client.coach_name }}" class="text-muted text-decoration-none small">
-      &#8592; Back to {{ client.coach_name }}
+    <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
+      &#8592; All Weeks — {{ client.name }}
     </a>
   </div>
-  <h3 class="mb-0">{{ client.name }}</h3>
-  <p class="text-muted mb-4">
-    Week of {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
-    {% if log %}<span class="badge bg-success ms-1">&#10003; Already logged</span>{% endif %}
-  </p>
+
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h3 class="mb-0">{{ client.name }}</h3>
+      <p class="text-muted mb-0">
+        {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
+        {% if log %}<span class="badge bg-success ms-1">&#10003; Saved</span>{% endif %}
+      </p>
+    </div>
+    <!-- Jump to a different week -->
+    <div>
+      <form method="get" action="" id="week-jump">
+        <select class="form-select form-select-sm" name="_"
+                onchange="window.location='/client/{{ client.id }}/log/'+this.value">
+          {% for ws, we in all_weeks %}
+          <option value="{{ ws.isoformat() }}" {{ 'selected' if ws == week_start }}>
+            {{ ws.strftime('%d %b') }}–{{ we.strftime('%d %b %Y') }}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
 
   <form method="post">
 
@@ -22,84 +40,69 @@
     <div class="card mb-4 shadow-sm">
       <div class="card-header fw-semibold bg-white">Modules <small class="text-muted fw-normal">(one-time milestones)</small></div>
       <div class="card-body">
-        <div class="d-flex flex-wrap gap-3">
+        <div class="d-flex flex-wrap gap-4">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="module_1" id="m1"
                    {{ 'checked' if client.module_1_done }}>
-            <label class="form-check-label" for="m1"><strong>Module 1:</strong> CV</label>
+            <label class="form-check-label" for="m1"><strong>M1:</strong> CV</label>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="module_2" id="m2"
                    {{ 'checked' if client.module_2_done }}>
-            <label class="form-check-label" for="m2"><strong>Module 2:</strong> LinkedIn</label>
+            <label class="form-check-label" for="m2"><strong>M2:</strong> LinkedIn</label>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="module_3" id="m3"
                    {{ 'checked' if client.module_3_done }}>
-            <label class="form-check-label" for="m3"><strong>Module 3:</strong> Content Ideation</label>
+            <label class="form-check-label" for="m3"><strong>M3:</strong> Content Ideation</label>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Weekly activities -->
+    <!-- Activity numbers -->
     <div class="card mb-4 shadow-sm">
       <div class="card-header fw-semibold bg-white">Weekly Activity Numbers</div>
       <div class="card-body">
         <div class="row g-3">
-
           <div class="col-6">
-            <label class="form-label mb-1">
-              Comments
-              <span class="text-muted small">(target: {{ baselines.comments }})</span>
-            </label>
+            <label class="form-label mb-1">Comments <span class="text-muted small">(target: {{ baselines.comments }})</span></label>
             <input type="number" class="form-control" name="comments"
-                   value="{{ log.comments if log else 0 }}" min="0">
+                   value="{{ log.comments if log else 0 }}" min="0" id="inp-comments">
           </div>
-
           <div class="col-6">
-            <label class="form-label mb-1">
-              Posts
-              <span class="text-muted small">(target: {{ baselines.posts }})</span>
-            </label>
+            <label class="form-label mb-1">Posts <span class="text-muted small">(target: {{ baselines.posts }})</span></label>
             <input type="number" class="form-control" name="posts"
-                   value="{{ log.posts if log else 0 }}" min="0">
+                   value="{{ log.posts if log else 0 }}" min="0" id="inp-posts">
           </div>
-
           <div class="col-6">
-            <label class="form-label mb-1">
-              Outreach
-              <span class="text-muted small">(target: {{ baselines.outreach }})</span>
-            </label>
+            <label class="form-label mb-1">Outreach <span class="text-muted small">(target: {{ baselines.outreach }})</span></label>
             <input type="number" class="form-control" name="outreach"
-                   value="{{ log.outreach if log else 0 }}" min="0">
+                   value="{{ log.outreach if log else 0 }}" min="0" id="inp-outreach">
           </div>
-
           <div class="col-6">
-            <label class="form-label mb-1">
-              Applications
-              <span class="text-muted small">(target: {{ baselines.applications }})</span>
-            </label>
-            <input type="number" class="form-control" name="applications" id="apps-input"
-                   value="{{ log.applications if log else 0 }}" min="0">
+            <label class="form-label mb-1">Applications <span class="text-muted small">(target: {{ baselines.applications }})</span></label>
+            <input type="number" class="form-control" name="applications"
+                   value="{{ log.applications if log else 0 }}" min="0" id="inp-applications">
           </div>
-
           <div class="col-6">
-            <label class="form-label mb-1">
-              Follow-ups
-              <span class="text-muted small" id="followup-label">
-                (target: {{ (log.applications * 2) if log else 0 }})
-              </span>
-            </label>
+            <label class="form-label mb-1">Follow-ups <span class="text-muted small" id="fu-label">(target: {{ (log.applications * 2) if log else 0 }})</span></label>
             <input type="number" class="form-control" name="follow_ups"
                    value="{{ log.follow_ups if log else 0 }}" min="0">
           </div>
+        </div>
 
+        <!-- Live compliance preview -->
+        <div class="mt-3 p-2 bg-light rounded">
+          <small class="text-muted">Live compliance: </small>
+          <strong id="live-pct">—</strong>
+          <div class="progress mt-1" style="height:6px;">
+            <div class="progress-bar" id="live-bar" style="width:0%"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Notes -->
     <div class="mb-4">
       <label class="form-label">Notes <span class="text-muted small">(optional)</span></label>
       <textarea class="form-control" name="notes" rows="2"
@@ -108,7 +111,7 @@
 
     <div class="d-flex gap-2">
       <button type="submit" class="btn btn-primary flex-grow-1">Save Progress</button>
-      <a href="/coach/{{ client.coach_name }}" class="btn btn-outline-secondary">Cancel</a>
+      <a href="/client/{{ client.id }}/weeks" class="btn btn-outline-secondary">Cancel</a>
     </div>
 
   </form>
@@ -116,8 +119,42 @@
 </div>
 
 <script>
-document.getElementById('apps-input').addEventListener('input', function () {
-  document.getElementById('followup-label').textContent = '(target: ' + (parseInt(this.value) || 0) * 2 + ')';
-});
+(function () {
+  const targets = {
+    comments:     {{ baselines.comments }},
+    posts:        {{ baselines.posts }},
+    outreach:     {{ baselines.outreach }},
+    applications: {{ baselines.applications }},
+  };
+
+  function calcPct() {
+    const vals = {
+      comments:     parseInt(document.getElementById('inp-comments').value)     || 0,
+      posts:        parseInt(document.getElementById('inp-posts').value)         || 0,
+      outreach:     parseInt(document.getElementById('inp-outreach').value)      || 0,
+      applications: parseInt(document.getElementById('inp-applications').value)  || 0,
+    };
+    let total = 0;
+    for (const [k, t] of Object.entries(targets)) {
+      total += t > 0 ? Math.min(100, vals[k] / t * 100) : 100;
+    }
+    return Math.round(total / Object.keys(targets).length);
+  }
+
+  function update() {
+    const apps = parseInt(document.getElementById('inp-applications').value) || 0;
+    document.getElementById('fu-label').textContent = '(target: ' + apps * 2 + ')';
+    const p = calcPct();
+    const bar = document.getElementById('live-bar');
+    bar.style.width = p + '%';
+    bar.className = 'progress-bar ' +
+      (p >= 70 ? 'bg-success' : p >= 50 ? 'bg-warning' : 'bg-danger');
+    document.getElementById('live-pct').textContent = p + '%';
+  }
+
+  ['inp-comments','inp-posts','inp-outreach','inp-applications']
+    .forEach(id => document.getElementById(id).addEventListener('input', update));
+  update();
+})();
 </script>
 {% endblock %}

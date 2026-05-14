@@ -5,80 +5,88 @@
 <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
   <div>
     <h2 class="mb-0">{{ coach_name }}</h2>
-    <small class="text-muted">Week of {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}</small>
+    <small class="text-muted">
+      This week: {{ this_week.strftime('%d %b') }} – {{ this_week_end.strftime('%d %b %Y') }}
+    </small>
   </div>
-  <a href="/" class="btn btn-outline-secondary btn-sm">&#8592; Change Coach</a>
-</div>
-
-<!-- Add client form -->
-<div class="card mb-4 shadow-sm">
-  <div class="card-body py-2">
-    <form class="d-flex gap-2" action="/coach/{{ coach_name }}/add_client" method="post">
-      <input type="text" class="form-control form-control-sm" name="client_name"
-             placeholder="Add new client name..." required>
-      <button class="btn btn-primary btn-sm text-nowrap" type="submit">+ Add Client</button>
-    </form>
+  <div class="d-flex gap-2">
+    <a href="/coach/{{ coach_name }}/add_client" class="btn btn-primary btn-sm">+ Add Client</a>
+    <a href="/" class="btn btn-outline-secondary btn-sm">&#8592; Change Coach</a>
   </div>
 </div>
 
-<!-- Client cards -->
-{% if clients %}
+{% if client_cards %}
 <div class="row g-3">
-  {% for client in clients %}
-  {% set log = client.current_week_log() %}
+  {% for card in client_cards %}
+  {% set c = card.client %}
+  {% set log = card.this_log %}
   <div class="col-md-6">
     <div class="card h-100 shadow-sm">
       <div class="card-body">
+
+        <!-- Header row -->
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <h6 class="card-title mb-0 fs-6 fw-semibold">{{ client.name }}</h6>
+          <div>
+            <h6 class="mb-0 fw-semibold">{{ c.name }}</h6>
+            <small class="text-muted">
+              Started {{ c.start_date.strftime('%d %b %Y') }}
+              {% if c.end_date %} · Ends {{ c.end_date.strftime('%d %b %Y') }}{% endif %}
+            </small>
+          </div>
           {% if log %}
-            <span class="badge bg-success">&#10003; Logged</span>
+            <span class="badge bg-success">&#10003; This week logged</span>
           {% else %}
-            <span class="badge bg-secondary">Not logged</span>
+            <span class="badge bg-secondary">Not logged yet</span>
           {% endif %}
         </div>
 
         <!-- Module badges -->
-        <div class="mb-3">
-          <span class="badge {{ 'bg-primary' if client.module_1_done else 'bg-light text-dark border' }}">M1: CV</span>
-          <span class="badge {{ 'bg-primary' if client.module_2_done else 'bg-light text-dark border' }}">M2: LinkedIn</span>
-          <span class="badge {{ 'bg-primary' if client.module_3_done else 'bg-light text-dark border' }}">M3: Content</span>
+        <div class="mb-2">
+          <span class="badge {{ 'bg-success' if c.module_1_done else 'bg-light text-dark border' }}">M1</span>
+          <span class="badge {{ 'bg-success' if c.module_2_done else 'bg-light text-dark border' }}">M2</span>
+          <span class="badge {{ 'bg-success' if c.module_3_done else 'bg-light text-dark border' }}">M3</span>
+          <span class="ms-2 small text-muted">
+            {{ card.logged_weeks }}/{{ card.total_weeks }} weeks logged
+          </span>
         </div>
 
+        <!-- This week's numbers (if logged) -->
         {% if log %}
-        {% set s = log.get_statuses(baselines) %}
-        <!-- Activity summary -->
+        {% set s = log.statuses(card.baselines) %}
         <div class="row text-center g-1 mb-3">
           <div class="col">
             <div class="small text-muted">Comments</div>
-            <span class="badge bg-{{ s.comments }}">{{ log.comments }}/{{ baselines.comments }}</span>
+            <span class="badge bg-{{ s.comments }}">{{ log.comments }}/{{ card.baselines.comments }}</span>
           </div>
           <div class="col">
             <div class="small text-muted">Posts</div>
-            <span class="badge bg-{{ s.posts }}">{{ log.posts }}/{{ baselines.posts }}</span>
+            <span class="badge bg-{{ s.posts }}">{{ log.posts }}/{{ card.baselines.posts }}</span>
           </div>
           <div class="col">
             <div class="small text-muted">Outreach</div>
-            <span class="badge bg-{{ s.outreach }}">{{ log.outreach }}/{{ baselines.outreach }}</span>
+            <span class="badge bg-{{ s.outreach }}">{{ log.outreach }}/{{ card.baselines.outreach }}</span>
           </div>
           <div class="col">
             <div class="small text-muted">Apps</div>
-            <span class="badge bg-{{ s.applications }}">{{ log.applications }}/{{ baselines.applications }}</span>
+            <span class="badge bg-{{ s.applications }}">{{ log.applications }}/{{ card.baselines.applications }}</span>
           </div>
           <div class="col">
-            <div class="small text-muted">Follow-ups</div>
+            <div class="small text-muted">F/U</div>
             <span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span>
           </div>
         </div>
         {% endif %}
 
-        <div class="d-flex gap-2">
-          <a href="/client/{{ client.id }}/log"
+        <!-- Action buttons -->
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/client/{{ c.id }}/log/{{ this_week.isoformat() }}"
              class="btn btn-sm {{ 'btn-outline-primary' if log else 'btn-primary' }} flex-grow-1">
             {{ '&#9998; Edit This Week' if log else '+ Log This Week' }}
           </a>
-          <a href="/client/{{ client.id }}/history" class="btn btn-sm btn-outline-secondary">History</a>
+          <a href="/client/{{ c.id }}/weeks" class="btn btn-sm btn-outline-secondary">All Weeks</a>
+          <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success">Report</a>
         </div>
+
       </div>
     </div>
   </div>
@@ -87,7 +95,8 @@
 
 {% else %}
 <div class="text-center text-muted py-5">
-  <p class="mb-0">No clients yet — add your first client above.</p>
+  <p>No clients yet.</p>
+  <a href="/coach/{{ coach_name }}/add_client" class="btn btn-primary">+ Add your first client</a>
 </div>
 {% endif %}
 {% endblock %}
