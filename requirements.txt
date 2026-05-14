@@ -1,0 +1,5 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+gunicorn==22.0.0
+# psycopg2-binary is only needed on Render (PostgreSQL). SQLite is used locally.
+# Render runs Python 3.12 where psycopg2-binary works fine (see render.yaml).

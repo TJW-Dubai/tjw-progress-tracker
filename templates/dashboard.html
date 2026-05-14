@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Founder Dashboard — TJW Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="mb-0">Founder Dashboard</h2>
+    <small class="text-muted">
+      Week of {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
+    </small>
+  </div>
+</div>
+
+<!-- Coach summary row -->
+<div class="row g-3 mb-5">
+  {% for coach in coach_data %}
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="card text-center shadow-sm h-100">
+      <div class="card-body py-3 px-2">
+        <div class="fw-semibold">{{ coach.name }}</div>
+        <div class="display-6 mt-1 fw-bold
+          {{ 'text-success' if coach.logged == coach.total and coach.total > 0
+             else 'text-warning' if coach.logged > 0
+             else 'text-danger' }}">
+          {{ coach.logged }}/{{ coach.total }}
+        </div>
+        <small class="text-muted">clients logged</small>
+        {% if coach.total > 0 %}
+        <div class="progress mt-2" style="height: 5px;">
+          <div class="progress-bar {{ 'bg-success' if coach.logged == coach.total else 'bg-warning' }}"
+               style="width: {{ (coach.logged / coach.total * 100) | int }}%"></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Detailed breakdown per coach -->
+{% for coach in coach_data %}
+<div class="card mb-4 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
+    <strong>{{ coach.name }}</strong>
+    {% if coach.total == 0 %}
+      <span class="badge bg-secondary">No clients</span>
+    {% elif coach.logged == coach.total %}
+      <span class="badge bg-success">&#10003; All logged this week</span>
+    {% else %}
+      <span class="badge bg-warning text-dark">
+        {{ coach.total - coach.logged }} client{{ 's' if (coach.total - coach.logged) != 1 }} not logged
+      </span>
+    {% endif %}
+  </div>
+
+  {% if coach.clients %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Client</th>
+          <th class="text-center">Modules</th>
+          <th class="text-center">
+            Comments<br><small class="text-muted fw-normal">{{ baselines.comments }}</small>
+          </th>
+          <th class="text-center">
+            Posts<br><small class="text-muted fw-normal">{{ baselines.posts }}</small>
+          </th>
+          <th class="text-center">
+            Outreach<br><small class="text-muted fw-normal">{{ baselines.outreach }}</small>
+          </th>
+          <th class="text-center">
+            Apps<br><small class="text-muted fw-normal">{{ baselines.applications }}</small>
+          </th>
+          <th class="text-center">
+            Follow-ups<br><small class="text-muted fw-normal">2&times;apps</small>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in coach.clients %}
+        {% set client = item.client %}
+        {% set log = item.log %}
+        <tr>
+          <td>
+            <a href="/client/{{ client.id }}/history" class="text-decoration-none fw-medium">
+              {{ client.name }}
+            </a>
+          </td>
+          <td class="text-center">
+            <span class="badge {{ 'bg-success' if client.module_1_done else 'bg-light text-dark border' }}"
+                  title="CV">M1</span>
+            <span class="badge {{ 'bg-success' if client.module_2_done else 'bg-light text-dark border' }}"
+                  title="LinkedIn">M2</span>
+            <span class="badge {{ 'bg-success' if client.module_3_done else 'bg-light text-dark border' }}"
+                  title="Content">M3</span>
+          </td>
+
+          {% if log %}
+          {% set s = item.statuses %}
+          <td class="text-center"><span class="badge bg-{{ s.comments }}">{{ log.comments }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.posts }}">{{ log.posts }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.outreach }}">{{ log.outreach }}</span></td>
+          <td class="text-center"><span class="badge bg-{{ s.applications }}">{{ log.applications }}</span></td>
+          <td class="text-center">
+            <span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span>
+          </td>
+          {% else %}
+          <td colspan="5" class="text-center">
+            <span class="badge bg-secondary">Not logged this week</span>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-muted py-2">No active clients.</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<!-- Legend -->
+<div class="card shadow-sm">
+  <div class="card-body py-2">
+    <small class="text-muted fw-semibold me-2">Legend:</small>
+    <span class="badge bg-success me-1">On track (&ge; target)</span>
+    <span class="badge bg-warning text-dark me-1">&ge; 70% of target</span>
+    <span class="badge bg-danger me-1">Behind (&lt; 70%)</span>
+    <span class="badge bg-secondary">Not logged</span>
+  </div>
+</div>
+{% endblock %}

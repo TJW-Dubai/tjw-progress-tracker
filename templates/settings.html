@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Baseline Settings — TJW Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-6 col-lg-5">
+
+  <h2 class="mb-1">Baseline Settings</h2>
+  <p class="text-muted mb-4">
+    Set the weekly targets for each activity. The suggested value is shown as a reference
+    — adjust up or down as needed.
+  </p>
+
+  <form method="post">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        {% for b in baselines %}
+        <div class="mb-4">
+          <label class="form-label fw-semibold mb-1">{{ b.label }}</label>
+          <div class="d-flex align-items-center gap-3">
+            <input type="number" class="form-control" name="{{ b.activity }}"
+                   value="{{ b.value }}" min="0" style="max-width: 120px;">
+            <span class="text-muted small">
+              Suggested: <strong>{{ b.suggested }}</strong> per week
+              {% if b.value != b.suggested %}
+                &nbsp;&bull;&nbsp;
+                <span class="{{ 'text-success' if b.value > b.suggested else 'text-warning' }}">
+                  {{ 'Higher' if b.value > b.suggested else 'Lower' }} than suggested
+                </span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="border-top pt-3 mt-2">
+          <p class="text-muted small mb-0">
+            <strong>Follow-ups</strong> are automatically calculated as
+            <strong>2 &times; applications</strong> per week and cannot be changed here.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1">Save Baselines</button>
+      <a href="/dashboard" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+
+</div>
+</div>
+{% endblock %}

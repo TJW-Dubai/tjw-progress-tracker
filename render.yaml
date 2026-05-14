@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: tjw-progress-tracker
+    env: python
+    pythonVersion: "3.12"
+    buildCommand: pip install -r requirements.txt psycopg2-binary==2.9.9
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tjw-tracker-db
+          property: connectionString
+
+databases:
+  - name: tjw-tracker-db
+    databaseName: tjw_tracker
+    user: tjw_tracker

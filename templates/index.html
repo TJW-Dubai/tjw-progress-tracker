@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Select Coach — TJW Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-9 col-lg-7">
+    <h2 class="mb-1">Good {{ greeting }}!</h2>
+    <p class="text-muted mb-4">Select your name to log progress for your clients this week.</p>
+
+    <div class="row g-3">
+      {% for coach in coaches %}
+      <div class="col-6 col-md-4">
+        <a href="/coach/{{ coach }}" class="text-decoration-none">
+          <div class="card coach-card text-center py-4 h-100">
+            <div style="font-size: 2.2rem;">&#128100;</div>
+            <div class="fw-semibold mt-2 fs-5">{{ coach }}</div>
+            <small class="text-muted">Success Coach</small>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

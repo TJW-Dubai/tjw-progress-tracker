@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Log Progress — {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7 col-lg-6">
+
+  <div class="mb-1">
+    <a href="/coach/{{ client.coach_name }}" class="text-muted text-decoration-none small">
+      &#8592; Back to {{ client.coach_name }}
+    </a>
+  </div>
+  <h3 class="mb-0">{{ client.name }}</h3>
+  <p class="text-muted mb-4">
+    Week of {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
+    {% if log %}<span class="badge bg-success ms-1">&#10003; Already logged</span>{% endif %}
+  </p>
+
+  <form method="post">
+
+    <!-- Modules -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Modules <small class="text-muted fw-normal">(one-time milestones)</small></div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_1" id="m1"
+                   {{ 'checked' if client.module_1_done }}>
+            <label class="form-check-label" for="m1"><strong>Module 1:</strong> CV</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_2" id="m2"
+                   {{ 'checked' if client.module_2_done }}>
+            <label class="form-check-label" for="m2"><strong>Module 2:</strong> LinkedIn</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="module_3" id="m3"
+                   {{ 'checked' if client.module_3_done }}>
+            <label class="form-check-label" for="m3"><strong>Module 3:</strong> Content Ideation</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly activities -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header fw-semibold bg-white">Weekly Activity Numbers</div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-6">
+            <label class="form-label mb-1">
+              Comments
+              <span class="text-muted small">(target: {{ baselines.comments }})</span>
+            </label>
+            <input type="number" class="form-control" name="comments"
+                   value="{{ log.comments if log else 0 }}" min="0">
+          </div>
+
+          <div class="col-6">
+            <label class="form-label mb-1">
+              Posts
+              <span class="text-muted small">(target: {{ baselines.posts }})</span>
+            </label>
+            <input type="number" class="form-control" name="posts"
+                   value="{{ log.posts if log else 0 }}" min="0">
+          </div>
+
+          <div class="col-6">
+            <label class="form-label mb-1">
+              Outreach
+              <span class="text-muted small">(target: {{ baselines.outreach }})</span>
+            </label>
+            <input type="number" class="form-control" name="outreach"
+                   value="{{ log.outreach if log else 0 }}" min="0">
+          </div>
+
+          <div class="col-6">
+            <label class="form-label mb-1">
+              Applications
+              <span class="text-muted small">(target: {{ baselines.applications }})</span>
+            </label>
+            <input type="number" class="form-control" name="applications" id="apps-input"
+                   value="{{ log.applications if log else 0 }}" min="0">
+          </div>
+
+          <div class="col-6">
+            <label class="form-label mb-1">
+              Follow-ups
+              <span class="text-muted small" id="followup-label">
+                (target: {{ (log.applications * 2) if log else 0 }})
+              </span>
+            </label>
+            <input type="number" class="form-control" name="follow_ups"
+                   value="{{ log.follow_ups if log else 0 }}" min="0">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="mb-4">
+      <label class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+      <textarea class="form-control" name="notes" rows="2"
+                placeholder="Blockers, wins, anything worth flagging...">{{ log.notes if log else '' }}</textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1">Save Progress</button>
+      <a href="/coach/{{ client.coach_name }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+
+  </form>
+</div>
+</div>
+
+<script>
+document.getElementById('apps-input').addEventListener('input', function () {
+  document.getElementById('followup-label').textContent = '(target: ' + (parseInt(this.value) || 0) * 2 + ')';
+});
+</script>
+{% endblock %}
