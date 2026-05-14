@@ -22,6 +22,7 @@ db = SQLAlchemy(app)
 
 COACHES  = ['Shruti', 'Veena', 'Poushali', 'Anindya', 'Swati', 'Ajay']
 FOUNDERS = ['Arindam', 'Poulomi']
+MANAGERS = ['Poushali']  # Cross-coach access for content & engagement
 ALERT_EMAIL = 'athejobworkshop@gmail.com'
 
 DEFAULT_BASELINES = [
@@ -54,8 +55,13 @@ def founder_required(f):
     return decorated
 
 
+def is_manager():
+    return session.get('name') in MANAGERS
+
 def can_write_client(client):
     if session.get('role') == 'founder':
+        return True
+    if is_manager():
         return True
     return session.get('name') == client.coach_name
 
@@ -66,6 +72,7 @@ def inject_session_info():
         'current_user': session.get('name'),
         'current_role': session.get('role'),
         'is_founder':   session.get('role') == 'founder',
+        'is_manager':   is_manager(),
     }
 
 
@@ -309,7 +316,7 @@ def logout():
 def coach(name):
     if name not in COACHES:
         return redirect(url_for('index'))
-    if session['role'] == 'coach' and session['name'] != name:
+    if session['role'] == 'coach' and session['name'] != name and not is_manager():
         return redirect(url_for('coach', name=session['name']))
     clients = (Client.query.filter_by(coach_name=name, active=True)
                .order_by(Client.name).all())
@@ -333,7 +340,7 @@ def coach(name):
 def add_client(name):
     if name not in COACHES:
         return redirect(url_for('index'))
-    if session['role'] == 'coach' and session['name'] != name:
+    if session['role'] == 'coach' and session['name'] != name and not is_manager():
         return redirect(url_for('coach', name=session['name']))
     global_bl = Baseline.query.order_by(Baseline.id).all()
     if request.method == 'POST':

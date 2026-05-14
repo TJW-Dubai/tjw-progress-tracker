@@ -20,8 +20,8 @@
 
       {% if current_user %}
         <!-- Who's logged in -->
-        <span class="badge {{ 'bg-warning text-dark' if is_founder else 'bg-secondary' }} px-2 py-1">
-          {{ '👑' if is_founder else '👤' }} {{ current_user }}
+        <span class="badge {{ 'bg-warning text-dark' if is_founder else 'bg-info text-dark' if is_manager else 'bg-secondary' }} px-2 py-1">
+          {{ '👑' if is_founder else '🔑' if is_manager else '👤' }} {{ current_user }}
         </span>
 
         {% if is_founder %}
