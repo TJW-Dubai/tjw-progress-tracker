@@ -21,7 +21,7 @@
       {% if current_user %}
         <!-- Who's logged in -->
         <span class="badge {{ 'bg-warning text-dark' if is_founder else 'bg-secondary' }} px-2 py-1">
-          {{ '&#128081;' if is_founder else '&#128100;' }} {{ current_user }}
+          {{ '👑' if is_founder else '👤' }} {{ current_user }}
         </span>
 
         {% if is_founder %}
