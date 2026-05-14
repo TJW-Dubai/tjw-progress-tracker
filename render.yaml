@@ -2,7 +2,6 @@ services:
   - type: web
     name: tjw-progress-tracker
     env: python
-    pythonVersion: "3.12"
     buildCommand: pip install -r requirements.txt psycopg2-binary==2.9.9
     startCommand: gunicorn app:app
     envVars:
