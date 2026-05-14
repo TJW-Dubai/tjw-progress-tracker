@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Sent Reports — {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+  <div>
+    <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
+      &#8592; {{ client.name }}
+    </a>
+    <h3 class="mb-0 mt-1">Sent Report History</h3>
+    <small class="text-muted">Every report marked as sent to {{ client.name }}</small>
+  </div>
+  <a href="/client/{{ client.id }}/report" class="btn btn-outline-primary btn-sm">
+    + Generate New Report
+  </a>
+</div>
+
+{% if reports %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Sent At</th>
+          <th>Sent By</th>
+          <th>Period Covered</th>
+          <th class="text-center">Overall Compliance</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rs in reports %}
+        <tr>
+          <td class="text-muted small">{{ loop.index }}</td>
+          <td class="text-nowrap">
+            <strong>{{ rs.sent_at.strftime('%d %b %Y') }}</strong>
+            <br><small class="text-muted">{{ rs.sent_at.strftime('%H:%M') }}</small>
+          </td>
+          <td>{{ rs.sent_by }}</td>
+          <td class="text-nowrap small">
+            {{ rs.from_week.strftime('%d %b') }} – {{ rs.to_week.strftime('%d %b %Y') }}
+          </td>
+          <td class="text-center">
+            {% if rs.overall_pct is defined and rs.overall_pct %}
+              <span class="badge {{ 'bg-success' if rs.overall_pct >= 70 else 'bg-danger' }}">
+                {{ rs.overall_pct }}%
+              </span>
+            {% else %}
+              <a href="/client/{{ client.id }}/report/history/{{ rs.id }}"
+                 class="small text-muted">view to see</a>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/client/{{ client.id }}/report/history/{{ rs.id }}"
+               class="btn btn-sm btn-outline-secondary">View Snapshot</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <p>No reports have been marked as sent yet.</p>
+  <p class="small">Generate a report and click <strong>"Mark as Sent"</strong> to save a snapshot here.</p>
+  <a href="/client/{{ client.id }}/report" class="btn btn-primary">Generate First Report</a>
+</div>
+{% endif %}
+{% endblock %}

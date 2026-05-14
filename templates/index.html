@@ -1,25 +1,109 @@
 {% extends "base.html" %}
-{% block title %}Select Coach — TJW Tracker{% endblock %}
+{% block title %}The Job Workshop — Progress Tracker{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-9 col-lg-7">
-    <h2 class="mb-1">Good {{ greeting }}!</h2>
-    <p class="text-muted mb-4">Select your name to log progress for your clients this week.</p>
+<div class="col-lg-9">
 
-    <div class="row g-3">
-      {% for coach in coaches %}
-      <div class="col-6 col-md-4">
-        <a href="/coach/{{ coach }}" class="text-decoration-none">
-          <div class="card coach-card text-center py-4 h-100">
-            <div style="font-size: 2.2rem;">&#128100;</div>
-            <div class="fw-semibold mt-2 fs-5">{{ coach }}</div>
-            <small class="text-muted">Success Coach</small>
+  <div class="text-center mb-5">
+    <h2 class="mb-1">Good {{ greeting }}!</h2>
+    <p class="text-muted">Select your name to continue.</p>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Success Coaches -->
+    <div class="col-md-7">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white fw-semibold">
+          Success Coaches
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            {% for c in coaches %}
+            <div class="col-6">
+              <form action="/select_name" method="post">
+                <input type="hidden" name="name" value="{{ c }}">
+                <button type="submit"
+                        class="btn btn-outline-primary w-100 py-3 coach-btn">
+                  <div style="font-size:1.5rem;">&#128100;</div>
+                  <div class="fw-semibold mt-1">{{ c }}</div>
+                </button>
+              </form>
+            </div>
+            {% endfor %}
           </div>
-        </a>
+        </div>
       </div>
-      {% endfor %}
+    </div>
+
+    <!-- Founders -->
+    <div class="col-md-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-dark text-white fw-semibold">
+          Founders
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            {% for f in founders %}
+            <div class="col-12">
+              <button type="button"
+                      class="btn btn-outline-dark w-100 py-3 coach-btn"
+                      onclick="openFounderModal('{{ f }}')">
+                <div style="font-size:1.5rem;">&#128081;</div>
+                <div class="fw-semibold mt-1">{{ f }}</div>
+                <small class="text-muted">&#128274; Password required</small>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="text-muted small mt-3 mb-0 text-center">
+            Founders have full access including dashboard, settings, and delete.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Founder password modal -->
+<div class="modal fade" id="founderModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form action="/founder/login" method="post">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title fw-semibold">Founder Login</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="name" id="founder-name-field">
+          <p class="text-muted small mb-3">
+            Logging in as <strong id="founder-name-display"></strong>
+          </p>
+          <input type="password" class="form-control" name="password"
+                 placeholder="Enter founder password" required autofocus>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="submit" class="btn btn-dark w-100">Enter Dashboard</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
+
+<style>
+.coach-btn { transition: transform .12s, box-shadow .12s; }
+.coach-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+</style>
+
+<script>
+function openFounderModal(name) {
+  document.getElementById('founder-name-field').value   = name;
+  document.getElementById('founder-name-display').textContent = name;
+  new bootstrap.Modal(document.getElementById('founderModal')).show();
+  setTimeout(() => document.querySelector('#founderModal input[type=password]').focus(), 400);
+}
+</script>
 {% endblock %}

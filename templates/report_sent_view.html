@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Sent Report — {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="no-print mb-4">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <a href="/client/{{ client.id }}/report/history" class="text-muted text-decoration-none small">
+        &#8592; Sent History — {{ client.name }}
+      </a>
+      <h3 class="mb-0 mt-1">Historical Report Snapshot</h3>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary">&#128438; Print / PDF</button>
+  </div>
+  <div class="alert alert-info mt-3 mb-0 py-2">
+    <small>
+      &#128196; This is a <strong>frozen snapshot</strong> of the report sent by
+      <strong>{{ rs.sent_by }}</strong> on <strong>{{ rs.sent_at.strftime('%d %b %Y at %H:%M') }}</strong>.
+      The data reflects what was recorded at that exact moment.
+    </small>
+  </div>
+</div>
+
+<!-- ═══════ FROZEN REPORT ═══════ -->
+<div class="report-page">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <div class="fw-bold fs-5" style="color:#1a1a2e;">The Job Workshop</div>
+      <div class="text-muted small">Weekly Progress Report — Historical Snapshot</div>
+    </div>
+    <div class="text-end small text-muted">
+      Sent {{ rs.sent_at.strftime('%d %b %Y') }} by {{ rs.sent_by }}
+    </div>
+  </div>
+
+  <hr class="my-2" style="border-color:#1a1a2e;border-width:2px;">
+
+  <div class="row mb-3">
+    <div class="col-6">
+      <table class="table table-sm table-borderless mb-0 small">
+        <tr><td class="text-muted pe-2">Client</td><td class="fw-semibold">{{ data.client_name }}</td></tr>
+        <tr><td class="text-muted pe-2">Coach</td><td>{{ data.coach_name }}</td></tr>
+      </table>
+    </div>
+    <div class="col-6">
+      <table class="table table-sm table-borderless mb-0 small">
+        <tr><td class="text-muted pe-2">Period</td>
+            <td>{{ data.from_week }} – {{ data.to_week }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modules at time of sending -->
+  <div class="mb-3">
+    <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">
+      Module Milestones (at time of sending)
+    </div>
+    <div class="d-flex gap-3 flex-wrap">
+      {% for label, done in [
+          ('Module 1: CV',       data.module_1),
+          ('Module 2: LinkedIn', data.module_2),
+          ('Module 3: Content',  data.module_3)] %}
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge {{ 'bg-success' if done else 'bg-secondary' }}">
+          {{ '&#10003;' if done else '&#9675;' }}
+        </span>
+        <span class="small {{ '' if done else 'text-muted' }}">{{ label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">
+    Weekly Activity Compliance
+  </div>
+  <div class="table-responsive mb-3">
+    <table class="table table-sm table-bordered mb-0" style="font-size:.82rem;">
+      <thead style="background:#1a1a2e;color:white;">
+        <tr>
+          <th>Wk</th><th>Dates</th>
+          <th class="text-center">Comments<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.comments }}</span></th>
+          <th class="text-center">Posts<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.posts }}</span></th>
+          <th class="text-center">Outreach<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.outreach }}</span></th>
+          <th class="text-center">Apps<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.applications }}</span></th>
+          <th class="text-center">Follow-ups</th>
+          <th class="text-center">Compliance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="fw-medium">Wk {{ r.wk }}</td>
+          <td class="text-nowrap">{{ r.week_start.strftime('%d %b') }}–{{ r.week_end.strftime('%d %b') }}</td>
+          {% if r.log %}{% set p = r.pcts %}
+          <td class="text-center">{{ r.log.comments }}/{{ baselines.comments }}
+            <br><small class="{{ 'text-success' if p.comments >= 70 else 'text-danger' }}">{{ p.comments|int }}%</small></td>
+          <td class="text-center">{{ r.log.posts }}/{{ baselines.posts }}
+            <br><small class="{{ 'text-success' if p.posts >= 70 else 'text-danger' }}">{{ p.posts|int }}%</small></td>
+          <td class="text-center">{{ r.log.outreach }}/{{ baselines.outreach }}
+            <br><small class="{{ 'text-success' if p.outreach >= 70 else 'text-danger' }}">{{ p.outreach|int }}%</small></td>
+          <td class="text-center">{{ r.log.applications }}/{{ baselines.applications }}
+            <br><small class="{{ 'text-success' if p.applications >= 70 else 'text-danger' }}">{{ p.applications|int }}%</small></td>
+          <td class="text-center">{{ r.log.follow_ups }}/{{ r.log.follow_up_target }}
+            <br><small class="{{ 'text-success' if p.follow_ups >= 70 else 'text-danger' }}">{{ p.follow_ups|int }}%</small></td>
+          <td class="text-center fw-bold {{ 'text-success' if r.overall >= 70 else 'text-danger' }}">{{ r.overall }}%</td>
+          {% else %}
+          <td colspan="6" class="text-center text-muted small">Not logged</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% if data.averages %}
+        <tr style="background:#f0f4ff;font-weight:600;">
+          <td colspan="2">Average</td>
+          {% for act in ['comments','posts','outreach','applications','follow_ups'] %}
+          <td class="text-center {{ 'text-success' if data.averages[act] >= 70 else 'text-danger' }}">
+            {{ data.averages[act] }}%
+          </td>
+          {% endfor %}
+          <td class="text-center {{ 'text-success' if data.averages.overall >= 70 else 'text-danger' }}">
+            {{ data.averages.overall }}%
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if data.averages %}
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <div class="fw-semibold">Overall Engagement Score:</div>
+    <div class="fs-4 fw-bold {{ 'text-success' if data.averages.overall >= 70 else 'text-danger' }}">
+      {{ data.averages.overall }}%
+    </div>
+  </div>
+  {% endif %}
+
+  <hr class="mt-4">
+  <div class="small text-muted text-center">
+    Sent {{ rs.sent_at.strftime('%d %b %Y at %H:%M') }} by {{ rs.sent_by }}
+    &nbsp;·&nbsp; The Job Workshop
+  </div>
+</div>
+
+<style>
+@media print {
+  .no-print{display:none !important;}
+  nav.navbar{display:none !important;}
+  body{background:white !important;font-size:11pt;}
+  .container-lg{max-width:100% !important;padding:0 1cm !important;}
+  .shadow-sm{box-shadow:none !important;}
+  .card{border:none !important;}
+}
+.report-page{background:white;padding:1.5rem;border-radius:8px;}
+</style>
+{% endblock %}

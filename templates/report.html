@@ -12,32 +12,41 @@
       </a>
       <h3 class="mb-0 mt-1">Progress Report</h3>
     </div>
-    <button onclick="window.print()" class="btn btn-success">
-      &#8659; Print / Save as PDF
-    </button>
+    <div class="d-flex gap-2">
+      <button onclick="window.print()" class="btn btn-outline-primary">&#128438; Print / PDF</button>
+      <form action="/client/{{ client.id }}/report/save" method="post" class="d-inline"
+            onsubmit="return confirm('Save a snapshot of this report and mark it as sent to {{ client.name }}?')">
+        <input type="hidden" name="from_week" value="{{ from_ws.isoformat() }}">
+        <input type="hidden" name="to_week"   value="{{ to_ws.isoformat() }}">
+        <button type="submit" class="btn btn-success">&#10003; Mark as Sent</button>
+      </form>
+      <a href="/client/{{ client.id }}/report/history" class="btn btn-outline-secondary">
+        &#128196; Sent History
+      </a>
+    </div>
   </div>
 
   <!-- Date range selector -->
   <div class="card shadow-sm mb-3">
     <div class="card-body py-2">
       <form class="d-flex align-items-center gap-3 flex-wrap" method="get">
-        <label class="form-label mb-0 text-muted small fw-semibold">Report Period:</label>
+        <label class="small text-muted fw-semibold mb-0">Period:</label>
         <div class="d-flex align-items-center gap-2">
-          <label class="small">From</label>
+          <label class="small mb-0">From</label>
           <select name="from_week" class="form-select form-select-sm" style="width:auto;">
-            {% for ws, we in all_weeks %}
-            <option value="{{ ws.isoformat() }}" {{ 'selected' if ws == from_ws }}>
-              {{ ws.strftime('%d %b %Y') }}
+            {% for ws2, we2 in all_weeks %}
+            <option value="{{ ws2.isoformat() }}" {{ 'selected' if ws2 == from_ws }}>
+              {{ ws2.strftime('%d %b %Y') }}
             </option>
             {% endfor %}
           </select>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <label class="small">To</label>
+          <label class="small mb-0">To</label>
           <select name="to_week" class="form-select form-select-sm" style="width:auto;">
-            {% for ws, we in all_weeks %}
-            <option value="{{ ws.isoformat() }}" {{ 'selected' if ws == to_ws }}>
-              {{ we.strftime('%d %b %Y') }}
+            {% for ws2, we2 in all_weeks %}
+            <option value="{{ ws2.isoformat() }}" {{ 'selected' if ws2 == to_ws }}>
+              {{ we2.strftime('%d %b %Y') }}
             </option>
             {% endfor %}
           </select>
@@ -48,23 +57,19 @@
   </div>
 </div>
 
-<!-- ═══════════════════════ PRINTABLE REPORT ═══════════════════════ -->
+<!-- ═══════ PRINTABLE REPORT ═══════ -->
 <div class="report-page">
 
-  <!-- Header -->
   <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
       <div class="fw-bold fs-5" style="color:#1a1a2e;">The Job Workshop</div>
-      <div class="text-muted small">Progress Tracker</div>
+      <div class="text-muted small">Weekly Progress Report</div>
     </div>
-    <div class="text-end">
-      <div class="small text-muted">Generated {{ generated.strftime('%d %b %Y') }}</div>
-    </div>
+    <div class="text-end small text-muted">Generated {{ generated.strftime('%d %b %Y') }}</div>
   </div>
 
-  <hr class="my-2" style="border-color:#1a1a2e; border-width:2px;">
+  <hr class="my-2" style="border-color:#1a1a2e;border-width:2px;">
 
-  <h4 class="mb-1">Client Weekly Progress Report</h4>
   <div class="row mb-3">
     <div class="col-6">
       <table class="table table-sm table-borderless mb-0 small">
@@ -74,21 +79,19 @@
     </div>
     <div class="col-6">
       <table class="table table-sm table-borderless mb-0 small">
-        <tr>
-          <td class="text-muted pe-2">Period</td>
-          <td>{{ from_ws.strftime('%d %b') }} – {{ to_ws.strftime('%d %b %Y') }}</td>
-        </tr>
-        <tr>
-          <td class="text-muted pe-2">Weeks</td>
-          <td>{{ rows | length }} week{{ 's' if rows|length != 1 }}</td>
-        </tr>
+        <tr><td class="text-muted pe-2">Period</td>
+            <td>{{ from_ws.strftime('%d %b') }} – {{ to_ws.strftime('%d %b %Y') }}</td></tr>
+        <tr><td class="text-muted pe-2">Weeks</td>
+            <td>{{ rows|length }} week{{ 's' if rows|length != 1 }}</td></tr>
       </table>
     </div>
   </div>
 
-  <!-- Module milestones -->
+  <!-- Modules -->
   <div class="mb-3">
-    <div class="fw-semibold small text-uppercase text-muted mb-1" style="letter-spacing:.05em;">Module Milestones</div>
+    <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">
+      Module Milestones
+    </div>
     <div class="d-flex gap-3 flex-wrap">
       {% for label, done in [
           ('Module 1: CV Optimisation',      client.module_1_done),
@@ -104,19 +107,20 @@
     </div>
   </div>
 
-  <!-- Weekly breakdown table -->
-  <div class="fw-semibold small text-uppercase text-muted mb-1" style="letter-spacing:.05em;">Weekly Activity Compliance</div>
+  <!-- Table -->
+  <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">
+    Weekly Activity Compliance
+  </div>
   {% if rows %}
   <div class="table-responsive mb-3">
-    <table class="table table-sm table-bordered mb-0" style="font-size:0.82rem;">
-      <thead style="background:#1a1a2e; color:white;">
+    <table class="table table-sm table-bordered mb-0" style="font-size:.82rem;">
+      <thead style="background:#1a1a2e;color:white;">
         <tr>
-          <th>Wk</th>
-          <th>Dates</th>
-          <th class="text-center">Comments<br><span style="font-weight:400;font-size:.75rem;">tgt: {{ baselines.comments }}</span></th>
-          <th class="text-center">Posts<br><span style="font-weight:400;font-size:.75rem;">tgt: {{ baselines.posts }}</span></th>
-          <th class="text-center">Outreach<br><span style="font-weight:400;font-size:.75rem;">tgt: {{ baselines.outreach }}</span></th>
-          <th class="text-center">Apps<br><span style="font-weight:400;font-size:.75rem;">tgt: {{ baselines.applications }}</span></th>
+          <th>Wk</th><th>Dates</th>
+          <th class="text-center">Comments<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.comments }}</span></th>
+          <th class="text-center">Posts<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.posts }}</span></th>
+          <th class="text-center">Outreach<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.outreach }}</span></th>
+          <th class="text-center">Apps<br><span style="font-weight:400;font-size:.75rem;">{{ baselines.applications }}</span></th>
           <th class="text-center">Follow-ups</th>
           <th class="text-center">Compliance</th>
         </tr>
@@ -128,28 +132,17 @@
           <td class="text-nowrap">{{ r.week_start.strftime('%d %b') }}–{{ r.week_end.strftime('%d %b') }}</td>
           {% if r.log %}
           {% set p = r.pcts %}
-          <td class="text-center">
-            {{ r.log.comments }}/{{ baselines.comments }}
-            <br><small class="{{ 'text-success' if p.comments >= 70 else 'text-danger' }}">{{ p.comments|int }}%</small>
-          </td>
-          <td class="text-center">
-            {{ r.log.posts }}/{{ baselines.posts }}
-            <br><small class="{{ 'text-success' if p.posts >= 70 else 'text-danger' }}">{{ p.posts|int }}%</small>
-          </td>
-          <td class="text-center">
-            {{ r.log.outreach }}/{{ baselines.outreach }}
-            <br><small class="{{ 'text-success' if p.outreach >= 70 else 'text-danger' }}">{{ p.outreach|int }}%</small>
-          </td>
-          <td class="text-center">
-            {{ r.log.applications }}/{{ baselines.applications }}
-            <br><small class="{{ 'text-success' if p.applications >= 70 else 'text-danger' }}">{{ p.applications|int }}%</small>
-          </td>
-          <td class="text-center">
-            {{ r.log.follow_ups }}/{{ r.log.follow_up_target() }}
-            <br><small class="{{ 'text-success' if p.follow_ups >= 70 else 'text-danger' }}">{{ p.follow_ups|int }}%</small>
-          </td>
-          <td class="text-center fw-bold
-            {{ 'text-success' if r.overall >= 70 else 'text-danger' }}">
+          <td class="text-center">{{ r.log.comments }}/{{ baselines.comments }}
+            <br><small class="{{ 'text-success' if p.comments >= 70 else 'text-danger' }}">{{ p.comments|int }}%</small></td>
+          <td class="text-center">{{ r.log.posts }}/{{ baselines.posts }}
+            <br><small class="{{ 'text-success' if p.posts >= 70 else 'text-danger' }}">{{ p.posts|int }}%</small></td>
+          <td class="text-center">{{ r.log.outreach }}/{{ baselines.outreach }}
+            <br><small class="{{ 'text-success' if p.outreach >= 70 else 'text-danger' }}">{{ p.outreach|int }}%</small></td>
+          <td class="text-center">{{ r.log.applications }}/{{ baselines.applications }}
+            <br><small class="{{ 'text-success' if p.applications >= 70 else 'text-danger' }}">{{ p.applications|int }}%</small></td>
+          <td class="text-center">{{ r.log.follow_ups }}/{{ r.log.follow_up_target }}
+            <br><small class="{{ 'text-success' if p.follow_ups >= 70 else 'text-danger' }}">{{ p.follow_ups|int }}%</small></td>
+          <td class="text-center fw-bold {{ 'text-success' if r.overall >= 70 else 'text-danger' }}">
             {{ r.overall }}%
           </td>
           {% else %}
@@ -157,10 +150,8 @@
           {% endif %}
         </tr>
         {% endfor %}
-
-        <!-- Average row -->
         {% if averages %}
-        <tr style="background:#f0f4ff; font-weight:600;">
+        <tr style="background:#f0f4ff;font-weight:600;">
           <td colspan="2">Average</td>
           {% for act in ['comments','posts','outreach','applications','follow_ups'] %}
           <td class="text-center {{ 'text-success' if averages[act] >= 70 else 'text-danger' }}">
@@ -176,7 +167,6 @@
     </table>
   </div>
 
-  <!-- Overall score -->
   {% if averages %}
   <div class="d-flex align-items-center gap-3 mb-3">
     <div class="fw-semibold">Overall Engagement Score:</div>
@@ -192,43 +182,36 @@
   </div>
   {% endif %}
 
-  <!-- Notes section -->
-  {% set notes_rows = rows | selectattr('log') | selectattr('log.notes') | list %}
+  {% set notes_rows = rows | selectattr('log') | list %}
   {% if notes_rows %}
   <div class="mb-3">
-    <div class="fw-semibold small text-uppercase text-muted mb-1" style="letter-spacing:.05em;">Notes</div>
-    {% for r in notes_rows %}
-    {% if r.log.notes %}
-    <div class="small mb-1">
-      <span class="text-muted">Wk {{ r.wk }}:</span> {{ r.log.notes }}
-    </div>
-    {% endif %}
-    {% endfor %}
+    <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">Notes</div>
+    {% for r in notes_rows %}{% if r.log and r.log.notes %}
+    <div class="small mb-1"><span class="text-muted">Wk {{ r.wk }}:</span> {{ r.log.notes }}</div>
+    {% endif %}{% endfor %}
   </div>
   {% endif %}
 
   {% else %}
-  <p class="text-muted">No weeks have been logged in this period.</p>
+  <p class="text-muted">No weeks logged in this period.</p>
   {% endif %}
 
   <hr class="mt-4">
   <div class="small text-muted text-center">
     The Job Workshop — generated {{ generated.strftime('%d %b %Y at %H:%M') }}
   </div>
-
 </div>
 
 <style>
 @media print {
-  .no-print { display: none !important; }
-  nav.navbar { display: none !important; }
-  body { background: white !important; font-size: 11pt; }
-  .container-lg { max-width: 100% !important; padding: 0 1cm !important; }
-  .report-page { padding: 0 !important; }
-  .shadow-sm { box-shadow: none !important; }
-  .card { border: none !important; }
-  a { color: inherit !important; text-decoration: none !important; }
+  .no-print { display:none !important; }
+  nav.navbar { display:none !important; }
+  body { background:white !important; font-size:11pt; }
+  .container-lg { max-width:100% !important; padding:0 1cm !important; }
+  .shadow-sm { box-shadow:none !important; }
+  .card { border:none !important; }
+  a { color:inherit !important; text-decoration:none !important; }
 }
-.report-page { background: white; padding: 1.5rem; border-radius: 8px; }
+.report-page { background:white; padding:1.5rem; border-radius:8px; }
 </style>
 {% endblock %}

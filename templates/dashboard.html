@@ -1,31 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Founder Dashboard — TJW Tracker{% endblock %}
+{% block title %}Dashboard — TJW Tracker{% endblock %}
 
 {% block content %}
-
 <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
   <div>
-    <h2 class="mb-0">Founder Dashboard</h2>
+    <h2 class="mb-0">{{ 'Founder Dashboard' if is_founder else 'Team Performance' }}</h2>
     <small class="text-muted">
-      {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
-      (Mon–Fri)
+      {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }} (Mon–Fri)
     </small>
   </div>
-  <!-- Week navigation -->
-  <div class="d-flex gap-1 align-items-center">
-    <a href="/dashboard?w={{ offset - 1 }}" class="btn btn-outline-secondary btn-sm">&#8592; Prev Week</a>
+  <div class="d-flex gap-1">
+    <a href="/dashboard?w={{ offset - 1 }}" class="btn btn-outline-secondary btn-sm">&#8592; Prev</a>
     {% if offset < 0 %}
-    <a href="/dashboard?w={{ offset + 1 }}" class="btn btn-outline-secondary btn-sm">Next Week &#8594;</a>
-    {% elif offset == 0 %}
-    <span class="btn btn-outline-secondary btn-sm disabled">This Week</span>
+    <a href="/dashboard?w={{ offset + 1 }}" class="btn btn-outline-secondary btn-sm">Next &#8594;</a>
+    {% else %}
+    <span class="btn btn-secondary btn-sm disabled">This Week</span>
     {% endif %}
   </div>
 </div>
 
-<!-- Consolidated compliance table -->
+<!-- ── Consolidated compliance table ── -->
 <div class="card shadow-sm mb-5">
-  <div class="card-header fw-semibold bg-white d-flex justify-content-between align-items-center">
-    <span>Compliance Overview — All Coaches</span>
+  <div class="card-header fw-semibold bg-white d-flex justify-content-between">
+    <span>Weekly Compliance — All Coaches</span>
     <small class="text-muted fw-normal">Red = below 70%</small>
   </div>
   <div class="table-responsive">
@@ -46,16 +43,10 @@
       </thead>
       <tbody>
         {% for r in coach_rows %}
-        {% macro cell(v) %}
-        <td class="{{ 'table-danger fw-bold' if v < 70 else '' }}">
-          {{ v }}%
-        </td>
-        {% endmacro %}
+        {% macro cell(v) %}<td class="{{ 'table-danger fw-bold' if v < 70 else '' }}">{{ v }}%</td>{% endmacro %}
         <tr>
           <td class="text-start fw-medium">{{ r.name }}</td>
-          {{ cell(r.m1) }}
-          {{ cell(r.m2) }}
-          {{ cell(r.m3) }}
+          {{ cell(r.m1) }}{{ cell(r.m2) }}{{ cell(r.m3) }}
           {{ cell(r.acts.comments|int) }}
           {{ cell(r.acts.posts|int) }}
           {{ cell(r.acts.outreach|int) }}
@@ -70,13 +61,12 @@
     </table>
   </div>
   <div class="card-footer text-muted small bg-white">
-    Module columns = % of clients who completed that module &nbsp;·&nbsp;
-    Activity columns = aggregate actual vs target for {{ week_start.strftime('%d %b') }}–{{ week_end.strftime('%d %b') }}
-    (unlogged clients count as 0)
+    Module % = clients who completed that module &nbsp;·&nbsp;
+    Activity % = aggregate actual vs target for the selected week (unlogged = 0)
   </div>
 </div>
 
-<!-- Per-coach client drill-down -->
+<!-- ── Per-coach client detail ── -->
 {% for r in coach_rows %}
 <div class="card mb-4 shadow-sm">
   <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
@@ -86,12 +76,9 @@
     {% elif r.logged == r.total %}
       <span class="badge bg-success">&#10003; All {{ r.total }} logged</span>
     {% else %}
-      <span class="badge bg-warning text-dark">
-        {{ r.total - r.logged }} of {{ r.total }} not logged
-      </span>
+      <span class="badge bg-warning text-dark">{{ r.total - r.logged }}/{{ r.total }} not yet logged</span>
     {% endif %}
   </div>
-
   {% if r.client_rows %}
   <div class="table-responsive">
     <table class="table table-sm table-hover mb-0 align-middle">
@@ -103,34 +90,28 @@
           <th class="text-center">Posts</th>
           <th class="text-center">Outreach</th>
           <th class="text-center">Apps</th>
-          <th class="text-center">Follow-ups</th>
+          <th class="text-center">F/U</th>
           <th class="text-center">Report</th>
         </tr>
       </thead>
       <tbody>
         {% for cr in r.client_rows %}
-        {% set c = cr.client %}
-        {% set log = cr.log %}
+        {% set c = cr.client %}{% set log = cr.log %}
         <tr>
-          <td>
-            <a href="/client/{{ c.id }}/weeks" class="text-decoration-none fw-medium">{{ c.name }}</a>
-          </td>
+          <td><a href="/client/{{ c.id }}/weeks" class="text-decoration-none fw-medium">{{ c.name }}</a></td>
           <td class="text-center">
             <span class="badge {{ 'bg-success' if c.module_1_done else 'bg-light text-dark border' }}" title="CV">M1</span>
             <span class="badge {{ 'bg-success' if c.module_2_done else 'bg-light text-dark border' }}" title="LinkedIn">M2</span>
             <span class="badge {{ 'bg-success' if c.module_3_done else 'bg-light text-dark border' }}" title="Content">M3</span>
           </td>
-          {% if log %}
-          {% set s = cr.statuses %}
+          {% if log %}{% set s = cr.statuses %}
           <td class="text-center"><span class="badge bg-{{ s.comments }}">{{ log.comments }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.posts }}">{{ log.posts }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.outreach }}">{{ log.outreach }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.applications }}">{{ log.applications }}</span></td>
           <td class="text-center"><span class="badge bg-{{ s.follow_ups }}">{{ log.follow_ups }}/{{ log.follow_up_target() }}</span></td>
           {% else %}
-          <td colspan="5" class="text-center">
-            <span class="badge bg-secondary">Not logged this week</span>
-          </td>
+          <td colspan="5" class="text-center"><span class="badge bg-secondary">Not logged</span></td>
           {% endif %}
           <td class="text-center">
             <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success py-0">&#8659;</a>
@@ -145,6 +126,78 @@
   {% endif %}
 </div>
 {% endfor %}
+
+<!-- ── Coach Activity Dashboard ── -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold bg-white d-flex align-items-center gap-2">
+    <span>&#128200; Team Activity This Week</span>
+    <small class="text-muted fw-normal">— who's been active and logging</small>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th class="text-center">Logins This Week</th>
+          <th>Last Active</th>
+          <th class="text-center">Clients Logged This Week</th>
+          <th class="text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in activity_rows %}
+        <tr>
+          <td class="fw-medium">{{ a.name }}</td>
+          <td>
+            <span class="badge {{ 'bg-dark' if a.role == 'founder' else 'bg-primary' }}">
+              {{ a.role }}
+            </span>
+          </td>
+          <td class="text-center">
+            {% if a.week_logins > 0 %}
+              <span class="badge bg-success">{{ a.week_logins }}</span>
+            {% else %}
+              <span class="badge bg-secondary">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.last_login %}
+              <span class="{{ 'text-success' if (a.last_login.date() >= (week_start)) else 'text-muted' }}">
+                {{ a.last_login.strftime('%d %b %Y, %H:%M') }}
+              </span>
+            {% else %}
+              <span class="text-muted">Never</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if a.total_clients is not none %}
+              {% if a.total_clients == 0 %}
+                <span class="text-muted small">—</span>
+              {% else %}
+                <span class="badge {{ 'bg-success' if a.logged_clients == a.total_clients else 'bg-warning text-dark' }}">
+                  {{ a.logged_clients }}/{{ a.total_clients }}
+                </span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if a.week_logins == 0 %}
+              <span class="badge bg-danger">Inactive</span>
+            {% elif a.role == 'coach' and a.total_clients and a.logged_clients < a.total_clients %}
+              <span class="badge bg-warning text-dark">Partial</span>
+            {% else %}
+              <span class="badge bg-success">Active</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Legend -->
 <div class="card shadow-sm">
