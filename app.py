@@ -471,6 +471,7 @@ def coach(name):
             'logged_weeks': sum(1 for ws, _ in wks if c.get_week_log(ws)),
             'this_log':     c.current_week_log(),
             'baselines':    c.get_baselines(),
+            'can_write':    can_write_client(c),
         })
     return render_template('coach.html', coach_name=name, client_cards=cards,
                            this_week=this_week, this_week_end=week_friday(this_week))

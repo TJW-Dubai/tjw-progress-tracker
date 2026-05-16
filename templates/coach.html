@@ -85,7 +85,7 @@
           </a>
           <a href="/client/{{ c.id }}/weeks" class="btn btn-sm btn-outline-secondary">All Weeks</a>
           <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success">Report</a>
-          {% if can_write_client(c) %}
+          {% if card.can_write %}
           <form action="/client/{{ c.id }}/delete" method="post" class="d-inline"
                 onsubmit="return confirm('Permanently delete {{ c.name }} and ALL their logs and report history? This cannot be undone.')">
             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete client">🗑</button>
