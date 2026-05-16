@@ -105,7 +105,7 @@ def activity_status(actual, target):
 
 
 def pct(actual, target):
-    if target == 0: return 100.0
+    if target == 0: return 0.0
     return min(100.0, round(actual / target * 100, 1))
 
 
@@ -391,7 +391,7 @@ def index():
                 target['follow_ups']   += log.follow_up_target()
             for a in ['comments', 'posts', 'outreach', 'applications']:
                 target[a] += bl[a]
-        _p = lambda a: pct(actual[a], target[a]) if target[a] else 100.0
+        _p = lambda a: pct(actual[a], target[a]) if target[a] else 0.0
         act_pcts = {a: _p(a) for a in acts}
         act_pcts['overall'] = round(sum(act_pcts.values()) / len(acts), 1)
 
