@@ -283,29 +283,48 @@ def send_alert(coach_name, client_name, ws, low):
 
 def generate_summary(client_name, averages):
     if not averages:
-        return "No data has been logged for this period yet."
+        return (f"No activity has been logged for this period yet. "
+                f"Once the week is recorded, a progress summary will appear here.")
     overall = averages['overall']
     acts = {
-        'Comments':     averages['comments'],
-        'Posts':        averages['posts'],
-        'Outreach':     averages['outreach'],
-        'Applications': averages['applications'],
-        'Follow-ups':   averages['follow_ups'],
+        'commenting on posts': averages['comments'],
+        'publishing posts':    averages['posts'],
+        'outreach':            averages['outreach'],
+        'job applications':    averages['applications'],
+        'follow-ups':          averages['follow_ups'],
     }
-    best  = max(acts, key=acts.get)
-    worst = min(acts, key=acts.get)
+    best_key  = max(acts, key=acts.get)
+    worst_key = min(acts, key=acts.get)
+    worst_val = acts[worst_key]
+
     if overall >= 90:
-        l1 = f"{client_name} had an excellent period with {overall:.0f}% overall compliance."
+        opening = (f"Really strong week, {client_name}. The consistency across activities "
+                   f"is exactly what builds momentum and the numbers reflect that.")
     elif overall >= 70:
-        l1 = f"{client_name} achieved {overall:.0f}% overall compliance — on track with targets."
+        opening = (f"Good effort this week, {client_name}. You are on track overall "
+                   f"and making solid progress. Keep showing up with the same energy.")
+    elif overall >= 50:
+        opening = (f"A mixed week for {client_name}. There were some bright spots "
+                   f"but also areas where things did not quite land. That is okay. "
+                   f"The goal is to learn from it and come back stronger.")
     else:
-        l1 = f"{client_name} achieved {overall:.0f}% overall compliance — below the 70% threshold."
-    l2 = f"{best} was the strongest area at {acts[best]:.0f}% of weekly target."
-    if acts[worst] < 70:
-        l3 = f"Focus needed on {worst} ({int(acts[worst])}% of target) next week."
+        opening = (f"This was a tough week for {client_name}, and that happens. "
+                   f"The important thing is to identify what got in the way "
+                   f"and make a clear plan for next week.")
+
+    strength = (f"The standout area was {best_key}, where the effort was clearly visible "
+                f"and the activity level was well maintained.")
+
+    if worst_val < 70:
+        improvement = (f"The one area to prioritise next week is {worst_key}. "
+                       f"Even a small, consistent push here will make a noticeable "
+                       f"difference to the overall picture.")
     else:
-        l3 = "All activities are within acceptable range — maintain the momentum."
-    return f"{l1} {l2} {l3}"
+        improvement = (f"All areas are in a good place right now. "
+                       f"The focus for next week should be on keeping this consistency "
+                       f"rather than letting any single area slip.")
+
+    return f"{opening} {strength} {improvement}"
 
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
