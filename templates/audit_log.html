@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — TJW Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="mb-0">Audit Log</h2>
+    <small class="text-muted">Last 30 days — up to 200 most recent entries</small>
+  </div>
+  <a href="/" class="btn btn-outline-secondary btn-sm">← Home</a>
+</div>
+
+<!-- Filter by coach -->
+<form method="get" class="mb-4 d-flex align-items-end gap-3 flex-wrap">
+  <div>
+    <label class="form-label small mb-1">Filter by Coach / Actor</label>
+    <select name="coach" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for name in coaches %}
+      <option value="{{ name }}" {{ 'selected' if coach_filter == name }}>{{ name }}</option>
+      {% endfor %}
+      {% for actor in all_actors %}
+        {% if actor not in coaches %}
+        <option value="{{ actor }}" {{ 'selected' if coach_filter == actor }}>{{ actor }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <button type="submit" class="btn btn-outline-primary btn-sm">Apply</button>
+    {% if coach_filter %}
+    <a href="/audit-log" class="btn btn-outline-secondary btn-sm ms-1">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if entries %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Date / Time</th>
+          <th>Coach</th>
+          <th>Action</th>
+          <th>What</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td class="text-nowrap small text-muted">
+            <strong>{{ e.timestamp.strftime('%d %b %Y') }}</strong><br>
+            {{ e.timestamp.strftime('%H:%M') }}
+          </td>
+          <td class="fw-medium">{{ e.actor }}</td>
+          <td>
+            {% if e.action == 'add_client' %}
+              <span class="badge bg-success">add_client</span>
+            {% elif e.action == 'edit_client' %}
+              <span class="badge bg-primary">edit_client</span>
+            {% elif e.action == 'delete_client' %}
+              <span class="badge bg-danger">delete_client</span>
+            {% elif e.action == 'delete_log' %}
+              <span class="badge bg-warning text-dark">delete_log</span>
+            {% elif e.action == 'log_week' %}
+              <span class="badge bg-primary">log_week</span>
+            {% elif e.action == 'edit_log' %}
+              <span class="badge bg-secondary">edit_log</span>
+            {% elif e.action == 'mark_sent' %}
+              <span class="badge bg-info text-dark">mark_sent</span>
+            {% elif e.action == 'archive_client' %}
+              <span class="badge bg-warning text-dark">archive_client</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ e.action }}</span>
+            {% endif %}
+          </td>
+          <td class="small">{{ e.entity }}</td>
+          <td class="small text-muted">{{ e.detail }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer text-muted small bg-white">
+    Showing {{ entries|length }} entr{{ 'y' if entries|length == 1 else 'ies' }}
+    {% if coach_filter %} for <strong>{{ coach_filter }}</strong>{% endif %}
+    — entries older than 30 days are automatically purged
+  </div>
+</div>
+
+{% else %}
+<div class="text-center text-muted py-5">
+  <p>No audit log entries found{% if coach_filter %} for <strong>{{ coach_filter }}</strong>{% endif %}.</p>
+  {% if coach_filter %}
+  <a href="/audit-log" class="btn btn-outline-secondary btn-sm">Show all entries</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

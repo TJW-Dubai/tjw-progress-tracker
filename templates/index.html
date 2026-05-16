@@ -2,70 +2,148 @@
 {% block title %}The Job Workshop — Progress Tracker{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-<div class="col-lg-9">
+<div class="text-center mb-4">
+  <h2 class="mb-1">Good {{ greeting }}!</h2>
+  <p class="text-muted mb-0">Select your name to log in, or view the live compliance overview below.</p>
+</div>
 
-  <div class="text-center mb-5">
-    <h2 class="mb-1">Good {{ greeting }}!</h2>
-    <p class="text-muted">Select your name to continue.</p>
-  </div>
+<div class="row g-4">
 
-  <div class="row g-4">
+  <!-- ═══ LEFT: Coach + Founder login ═══ -->
+  <div class="col-lg-4">
 
     <!-- Success Coaches -->
-    <div class="col-md-7">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-primary text-white fw-semibold">
-          Success Coaches
-        </div>
-        <div class="card-body">
-          <div class="row g-2">
-            {% for c in coaches %}
-            <div class="col-6">
-              <form action="/select_name" method="post">
-                <input type="hidden" name="name" value="{{ c }}">
-                <button type="submit"
-                        class="btn btn-outline-primary w-100 py-3 coach-btn">
-                  <div style="font-size:1.5rem;">&#128100;</div>
-                  <div class="fw-semibold mt-1">{{ c }}</div>
-                </button>
-              </form>
-            </div>
-            {% endfor %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-primary text-white fw-semibold">
+        Success Coaches
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% for c in coaches %}
+          <div class="col-6">
+            <form action="/select_name" method="post">
+              <input type="hidden" name="name" value="{{ c }}">
+              <button type="submit"
+                      class="btn btn-outline-primary w-100 py-2 coach-btn">
+                <div style="font-size:1.3rem;">👤</div>
+                <div class="fw-semibold mt-1 small">{{ c }}</div>
+              </button>
+            </form>
           </div>
+          {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- Founders -->
-    <div class="col-md-5">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-dark text-white fw-semibold">
-          Founders
-        </div>
-        <div class="card-body">
-          <div class="row g-2">
-            {% for f in founders %}
-            <div class="col-12">
-              <button type="button"
-                      class="btn btn-outline-dark w-100 py-3 coach-btn"
-                      onclick="openFounderModal('{{ f }}')">
-                <div style="font-size:1.5rem;">&#128081;</div>
-                <div class="fw-semibold mt-1">{{ f }}</div>
-                <small class="text-muted">&#128274; Password required</small>
-              </button>
-            </div>
-            {% endfor %}
-          </div>
-          <p class="text-muted small mt-3 mb-0 text-center">
-            Founders have full access including dashboard, settings, and delete.
-          </p>
-        </div>
-      </div>
+    <!-- Founder login (subtle) -->
+    <div class="text-center">
+      <a class="text-muted small text-decoration-none"
+         href="#founderModal" data-bs-toggle="modal"
+         style="cursor:pointer;">
+        👑 Founder Login
+      </a>
     </div>
 
   </div>
-</div>
+
+  <!-- ═══ RIGHT: Live Compliance Overview ═══ -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold bg-white d-flex justify-content-between align-items-center">
+        <span>📈 Live Compliance Overview</span>
+        <small class="text-muted fw-normal">Public — no login needed</small>
+      </div>
+      <div class="card-body">
+
+        <!-- Filter bar -->
+        <form method="get" class="row g-2 mb-3 align-items-end">
+          <div class="col-auto">
+            <label class="form-label small mb-1">Coach</label>
+            <select name="coach" class="form-select form-select-sm">
+              <option value="">All Coaches</option>
+              {% for c in coaches %}
+              <option value="{{ c }}" {{ 'selected' if founder_data.coach_param == c }}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label small mb-1">Week</label>
+            <select name="week" class="form-select form-select-sm">
+              {% for m in founder_data.week_options %}
+              <option value="{{ m.isoformat() }}"
+                      {{ 'selected' if m == founder_data.selected_week }}>
+                {{ m.strftime('%d %b %Y') }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label small mb-1">Activity</label>
+            <select name="activity" class="form-select form-select-sm">
+              {% for key, label in founder_data.activity_map.items() %}
+              <option value="{{ key }}"
+                      {{ 'selected' if founder_data.activity_param == key }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary btn-sm">Apply</button>
+          </div>
+        </form>
+
+        <!-- Compliance table -->
+        {% if founder_data.rows %}
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-2 align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>Coach</th>
+                <th class="text-center">Active Clients</th>
+                <th class="text-center">Logged This Week</th>
+                <th class="text-center">{{ founder_data.activity_map.get(founder_data.activity_param, 'Overall') }} %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in founder_data.rows %}
+              <tr>
+                <td class="fw-medium">{{ r.name }}</td>
+                <td class="text-center">{{ r.total }}</td>
+                <td class="text-center">
+                  {% if r.total == 0 %}
+                    <span class="text-muted small">—</span>
+                  {% else %}
+                    <span class="badge {{ 'bg-success' if r.logged == r.total else 'bg-warning text-dark' }}">
+                      {{ r.logged }}/{{ r.total }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-center fw-bold {{ 'text-success' if r.metric_val >= 70 else 'text-danger' }}">
+                  {{ r.metric_val | int }}%
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if founder_data.comparison %}
+        <div class="alert alert-light border py-2 mb-2 small">
+          📊 {{ founder_data.comparison }}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <p class="text-muted small">No data available for the selected filters.</p>
+        {% endif %}
+
+        <div class="text-end mt-1">
+          <a href="/audit-log" class="small text-muted text-decoration-none">View Audit Log →</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Founder password modal -->
@@ -78,12 +156,16 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="hidden" name="name" id="founder-name-field">
-          <p class="text-muted small mb-3">
-            Logging in as <strong id="founder-name-display"></strong>
-          </p>
+          <div class="mb-3">
+            <label class="form-label small">Name</label>
+            <select name="name" class="form-select form-select-sm" id="founder-name-select">
+              {% for f in founders %}
+              <option value="{{ f }}">{{ f }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <input type="password" class="form-control" name="password"
-                 placeholder="Enter founder password" required autofocus>
+                 placeholder="Founder password" required>
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="submit" class="btn btn-dark w-100">Enter Dashboard</button>
@@ -97,13 +179,4 @@
 .coach-btn { transition: transform .12s, box-shadow .12s; }
 .coach-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
 </style>
-
-<script>
-function openFounderModal(name) {
-  document.getElementById('founder-name-field').value   = name;
-  document.getElementById('founder-name-display').textContent = name;
-  new bootstrap.Modal(document.getElementById('founderModal')).show();
-  setTimeout(() => document.querySelector('#founderModal input[type=password]').focus(), 400);
-}
-</script>
 {% endblock %}

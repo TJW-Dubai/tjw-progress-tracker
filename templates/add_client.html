@@ -6,7 +6,7 @@
 <div class="col-md-7 col-lg-6">
 
   <div class="mb-1">
-    <a href="/coach/{{ coach_name }}" class="text-muted text-decoration-none small">&#8592; Back to {{ coach_name }}</a>
+    <a href="/coach/{{ coach_name }}" class="text-muted text-decoration-none small">← Back to {{ coach_name }}</a>
   </div>
   <h3 class="mb-1">Add New Client</h3>
   <p class="text-muted mb-4">Fill in the client's details and set their weekly targets.</p>
@@ -21,18 +21,21 @@
           <label class="form-label">Client Name <span class="text-danger">*</span></label>
           <input type="text" class="form-control" name="client_name" required
                  placeholder="e.g. Rahul Sharma">
+          <div class="form-text text-muted">Full name as it will appear in reports</div>
         </div>
         <div class="row g-3">
           <div class="col-6">
             <label class="form-label">Start Date <span class="text-danger">*</span></label>
             <input type="date" class="form-control" name="start_date"
                    value="{{ today }}" required>
+            <div class="form-text text-muted">The date the client started the programme with TJW</div>
           </div>
           <div class="col-6">
             <label class="form-label">
               End Date <span class="text-muted small">(optional)</span>
             </label>
             <input type="date" class="form-control" name="end_date">
+            <div class="form-text text-muted">Expected programme end date (optional)</div>
           </div>
         </div>
       </div>
@@ -42,7 +45,7 @@
     <div class="card mb-4 shadow-sm">
       <div class="card-header fw-semibold bg-white">Module Milestones</div>
       <div class="card-body">
-        <p class="text-muted small mb-3">Check any modules already completed when onboarding this client.</p>
+        <p class="text-muted small mb-3">Tick only if the module has been fully completed with the client</p>
         <div class="d-flex flex-wrap gap-4">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="module_1" id="m1">
@@ -76,6 +79,7 @@
             </label>
             <input type="number" class="form-control" name="bl_{{ b.activity }}"
                    value="{{ b.value }}" min="0">
+            <div class="form-text text-muted">Weekly target — defaults to the global baseline. Adjust only if agreed with this client specifically.</div>
           </div>
           {% endfor %}
           <div class="col-6">

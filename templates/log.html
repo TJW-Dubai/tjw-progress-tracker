@@ -7,7 +7,7 @@
 
   <div class="mb-1">
     <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
-      &#8592; All Weeks — {{ client.name }}
+      ← All Weeks — {{ client.name }}
     </a>
   </div>
 
@@ -16,7 +16,7 @@
       <h3 class="mb-0">{{ client.name }}</h3>
       <p class="text-muted mb-0">
         {{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}
-        {% if log %}<span class="badge bg-success ms-1">&#10003; Saved</span>{% endif %}
+        {% if log %}<span class="badge bg-success ms-1">✓ Saved</span>{% endif %}
       </p>
     </div>
     <!-- Jump to a different week -->
@@ -68,27 +68,37 @@
           <div class="col-6">
             <label class="form-label mb-1">Comments <span class="text-muted small">(target: {{ baselines.comments }})</span></label>
             <input type="number" class="form-control" name="comments"
-                   value="{{ log.comments if log else 0 }}" min="0" id="inp-comments">
+                   value="{{ log.comments if log else 0 }}" min="0" id="inp-comments"
+                   placeholder="e.g. 18">
+            <div class="form-text text-muted">Total LinkedIn comments made by the client this week (target: {{ baselines.comments }})</div>
           </div>
           <div class="col-6">
             <label class="form-label mb-1">Posts <span class="text-muted small">(target: {{ baselines.posts }})</span></label>
             <input type="number" class="form-control" name="posts"
-                   value="{{ log.posts if log else 0 }}" min="0" id="inp-posts">
+                   value="{{ log.posts if log else 0 }}" min="0" id="inp-posts"
+                   placeholder="e.g. 3">
+            <div class="form-text text-muted">LinkedIn posts published this week (target: {{ baselines.posts }})</div>
           </div>
           <div class="col-6">
             <label class="form-label mb-1">Outreach <span class="text-muted small">(target: {{ baselines.outreach }})</span></label>
             <input type="number" class="form-control" name="outreach"
-                   value="{{ log.outreach if log else 0 }}" min="0" id="inp-outreach">
+                   value="{{ log.outreach if log else 0 }}" min="0" id="inp-outreach"
+                   placeholder="e.g. 42">
+            <div class="form-text text-muted">New connection requests or DMs sent this week (target: {{ baselines.outreach }})</div>
           </div>
           <div class="col-6">
             <label class="form-label mb-1">Applications <span class="text-muted small">(target: {{ baselines.applications }})</span></label>
             <input type="number" class="form-control" name="applications"
-                   value="{{ log.applications if log else 0 }}" min="0" id="inp-applications">
+                   value="{{ log.applications if log else 0 }}" min="0" id="inp-applications"
+                   placeholder="e.g. 12">
+            <div class="form-text text-muted">Job applications submitted this week (target: {{ baselines.applications }})</div>
           </div>
           <div class="col-6">
             <label class="form-label mb-1">Follow-ups <span class="text-muted small" id="fu-label">(target: {{ (log.applications * 2) if log else 0 }})</span></label>
             <input type="number" class="form-control" name="follow_ups"
-                   value="{{ log.follow_ups if log else 0 }}" min="0">
+                   value="{{ log.follow_ups if log else 0 }}" min="0"
+                   placeholder="e.g. 24">
+            <div class="form-text text-muted">Follow-up messages on prior applications — aim for 2× applications sent</div>
           </div>
         </div>
 
@@ -106,7 +116,7 @@
     <div class="mb-4">
       <label class="form-label">Notes <span class="text-muted small">(optional)</span></label>
       <textarea class="form-control" name="notes" rows="2"
-                placeholder="Blockers, wins, anything worth flagging...">{{ log.notes if log else '' }}</textarea>
+                placeholder="e.g. Client was travelling Mon–Tue, strong recovery mid-week">{{ log.notes if log else '' }}</textarea>
     </div>
 
     <div class="d-flex gap-2">

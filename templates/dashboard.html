@@ -10,9 +10,9 @@
     </small>
   </div>
   <div class="d-flex gap-1">
-    <a href="/dashboard?w={{ offset - 1 }}" class="btn btn-outline-secondary btn-sm">&#8592; Prev</a>
+    <a href="/dashboard?w={{ offset - 1 }}" class="btn btn-outline-secondary btn-sm">← Prev</a>
     {% if offset < 0 %}
-    <a href="/dashboard?w={{ offset + 1 }}" class="btn btn-outline-secondary btn-sm">Next &#8594;</a>
+    <a href="/dashboard?w={{ offset + 1 }}" class="btn btn-outline-secondary btn-sm">Next →</a>
     {% else %}
     <span class="btn btn-secondary btn-sm disabled">This Week</span>
     {% endif %}
@@ -74,7 +74,7 @@
     {% if r.total == 0 %}
       <span class="badge bg-secondary">No clients</span>
     {% elif r.logged == r.total %}
-      <span class="badge bg-success">&#10003; All {{ r.total }} logged</span>
+      <span class="badge bg-success">✓ All {{ r.total }} logged</span>
     {% else %}
       <span class="badge bg-warning text-dark">{{ r.total - r.logged }}/{{ r.total }} not yet logged</span>
     {% endif %}
@@ -114,7 +114,7 @@
           <td colspan="5" class="text-center"><span class="badge bg-secondary">Not logged</span></td>
           {% endif %}
           <td class="text-center">
-            <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success py-0">&#8659;</a>
+            <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success py-0">⬇</a>
           </td>
         </tr>
         {% endfor %}
@@ -130,7 +130,7 @@
 <!-- ── Coach Activity Dashboard ── -->
 <div class="card shadow-sm mb-4">
   <div class="card-header fw-semibold bg-white d-flex align-items-center gap-2">
-    <span>&#128200; Team Activity This Week</span>
+    <span>📈 Team Activity This Week</span>
     <small class="text-muted fw-normal">— who's been active and logging</small>
   </div>
   <div class="table-responsive">
@@ -203,8 +203,8 @@
 <div class="card shadow-sm">
   <div class="card-body py-2">
     <small class="text-muted fw-semibold me-2">Activity legend:</small>
-    <span class="badge bg-success me-1">&#8805; target</span>
-    <span class="badge bg-warning text-dark me-1">&#8805; 70%</span>
+    <span class="badge bg-success me-1">≥ target</span>
+    <span class="badge bg-warning text-dark me-1">≥ 70%</span>
     <span class="badge bg-danger me-1">&lt; 70%</span>
     <span class="badge bg-secondary">Not logged</span>
   </div>

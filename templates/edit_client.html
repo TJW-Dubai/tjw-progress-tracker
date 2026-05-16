@@ -7,7 +7,7 @@
 
   <div class="mb-1">
     <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
-      &#8592; Back to {{ client.name }}
+      ← Back to {{ client.name }}
     </a>
   </div>
   <h3 class="mb-1">Edit Client</h3>
@@ -21,18 +21,21 @@
         <div class="mb-3">
           <label class="form-label">Client Name</label>
           <input type="text" class="form-control" name="client_name"
-                 value="{{ client.name }}" required>
+                 value="{{ client.name }}" placeholder="e.g. Rahul Sharma" required>
+          <div class="form-text text-muted">Full name as it will appear in reports</div>
         </div>
         <div class="row g-3">
           <div class="col-6">
             <label class="form-label">Start Date</label>
             <input type="date" class="form-control" name="start_date"
                    value="{{ client.start_date.isoformat() }}" required>
+            <div class="form-text text-muted">The date the client started the programme with TJW</div>
           </div>
           <div class="col-6">
             <label class="form-label">End Date <span class="text-muted small">(optional)</span></label>
             <input type="date" class="form-control" name="end_date"
                    value="{{ client.end_date.isoformat() if client.end_date else '' }}">
+            <div class="form-text text-muted">Expected programme end date (optional)</div>
           </div>
         </div>
       </div>
@@ -41,6 +44,7 @@
     <div class="card mb-4 shadow-sm">
       <div class="card-header fw-semibold bg-white">Module Milestones</div>
       <div class="card-body">
+        <p class="text-muted small mb-3">Tick only if the module has been fully completed with the client</p>
         <div class="d-flex flex-wrap gap-4">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="module_1" id="m1"
@@ -73,6 +77,7 @@
             </label>
             <input type="number" class="form-control" name="bl_{{ b.activity }}"
                    value="{{ cb_map.get(b.activity, b.value) }}" min="0">
+            <div class="form-text text-muted">Weekly target — defaults to the global baseline. Adjust only if agreed with this client specifically.</div>
           </div>
           {% endfor %}
           <div class="col-6">
@@ -88,10 +93,14 @@
       <a href="/client/{{ client.id }}/weeks" class="btn btn-outline-secondary">Cancel</a>
     </div>
 
-    <div class="mt-3 pt-3 border-top">
-      <form action="/client/{{ client.id }}/archive" method="post"
+    <div class="mt-3 pt-3 border-top d-flex gap-2">
+      <form action="/client/{{ client.id }}/archive" method="post" class="flex-grow-1"
             onsubmit="return confirm('Archive {{ client.name }}? They will be hidden from active view.')">
-        <button type="submit" class="btn btn-outline-danger btn-sm">Archive Client</button>
+        <button type="submit" class="btn btn-outline-warning btn-sm w-100">Archive Client</button>
+      </form>
+      <form action="/client/{{ client.id }}/delete" method="post"
+            onsubmit="return confirm('Permanently delete {{ client.name }} and ALL their logs and report history? This cannot be undone.')">
+        <button type="submit" class="btn btn-outline-danger btn-sm">🗑 Delete Client</button>
       </form>
     </div>
 

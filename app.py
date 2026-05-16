@@ -229,6 +229,24 @@ class ReportSent(db.Model):
     report_json = db.Column(db.Text, nullable=False)
 
 
+class AuditLog(db.Model):
+    id        = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    actor     = db.Column(db.String(50), nullable=False)
+    action    = db.Column(db.String(50), nullable=False)
+    entity    = db.Column(db.String(100), nullable=False)
+    detail    = db.Column(db.Text, default='')
+
+
+def audit(action, entity, detail=''):
+    db.session.add(AuditLog(
+        actor=session.get('name', 'system'),
+        action=action,
+        entity=entity,
+        detail=detail,
+    ))
+
+
 # ── Email ─────────────────────────────────────────────────────────────────────
 
 def send_alert(coach_name, client_name, ws, low):
@@ -261,6 +279,35 @@ def send_alert(coach_name, client_name, ws, low):
         pass
 
 
+# ── Report helpers ────────────────────────────────────────────────────────────
+
+def generate_summary(client_name, averages):
+    if not averages:
+        return "No data has been logged for this period yet."
+    overall = averages['overall']
+    acts = {
+        'Comments':     averages['comments'],
+        'Posts':        averages['posts'],
+        'Outreach':     averages['outreach'],
+        'Applications': averages['applications'],
+        'Follow-ups':   averages['follow_ups'],
+    }
+    best  = max(acts, key=acts.get)
+    worst = min(acts, key=acts.get)
+    if overall >= 90:
+        l1 = f"{client_name} had an excellent period with {overall:.0f}% overall compliance."
+    elif overall >= 70:
+        l1 = f"{client_name} achieved {overall:.0f}% overall compliance — on track with targets."
+    else:
+        l1 = f"{client_name} achieved {overall:.0f}% overall compliance — below the 70% threshold."
+    l2 = f"{best} was the strongest area at {acts[best]:.0f}% of weekly target."
+    if acts[worst] < 70:
+        l3 = f"Focus needed on {worst} ({int(acts[worst])}% of target) next week."
+    else:
+        l3 = "All activities are within acceptable range — maintain the momentum."
+    return f"{l1} {l2} {l3}"
+
+
 # ── Auth routes ───────────────────────────────────────────────────────────────
 
 @app.route('/')
@@ -269,10 +316,104 @@ def index():
         if session.get('role') == 'founder':
             return redirect(url_for('dashboard'))
         return redirect(url_for('coach', name=session['name']))
+
     h = datetime.now().hour
     greeting = 'morning' if h < 12 else 'afternoon' if h < 17 else 'evening'
+
+    # Build compliance data for public founder dashboard
+    coach_param    = request.args.get('coach', '')
+    week_param     = request.args.get('week', '')
+    activity_param = request.args.get('activity', 'overall')
+
+    # Generate last 9 Mondays (current + 8 prior)
+    week_options = []
+    base = week_monday()
+    for i in range(9):
+        m = base - timedelta(weeks=i)
+        week_options.append(m)
+
+    # Determine selected week
+    try:
+        selected_week = date.fromisoformat(week_param)
+        selected_week = week_monday(selected_week)
+    except Exception:
+        selected_week = week_options[0]
+
+    # Compute per-coach compliance rows
+    activity_map = {
+        'overall':      'Overall',
+        'comments':     'Comments',
+        'posts':        'Posts',
+        'outreach':     'Outreach',
+        'applications': 'Applications',
+        'follow_ups':   'Follow-ups',
+    }
+
+    founder_rows = []
+    for cname in COACHES:
+        if coach_param and coach_param != cname:
+            continue
+        clients = Client.query.filter_by(coach_name=cname, active=True).all()
+        total   = len(clients)
+        logged  = 0
+        acts    = ['comments', 'posts', 'outreach', 'applications', 'follow_ups']
+        actual  = {a: 0 for a in acts}
+        target  = {a: 0 for a in acts}
+        for c in clients:
+            bl  = c.get_baselines()
+            log = c.get_week_log(selected_week)
+            if log:
+                logged += 1
+                actual['comments']     += log.comments
+                actual['posts']        += log.posts
+                actual['outreach']     += log.outreach
+                actual['applications'] += log.applications
+                actual['follow_ups']   += log.follow_ups
+                target['follow_ups']   += log.follow_up_target()
+            for a in ['comments', 'posts', 'outreach', 'applications']:
+                target[a] += bl[a]
+        _p = lambda a: pct(actual[a], target[a]) if target[a] else 100.0
+        act_pcts = {a: _p(a) for a in acts}
+        act_pcts['overall'] = round(sum(act_pcts.values()) / len(acts), 1)
+
+        if activity_param in act_pcts:
+            metric_val = act_pcts[activity_param]
+        else:
+            metric_val = act_pcts['overall']
+
+        founder_rows.append({
+            'name':       cname,
+            'total':      total,
+            'logged':     logged,
+            'metric_val': metric_val,
+            'act_pcts':   act_pcts,
+        })
+
+    # Top/bottom comparison text
+    comparison = ''
+    if len(founder_rows) >= 2:
+        sorted_rows = sorted(founder_rows, key=lambda r: r['metric_val'], reverse=True)
+        top    = sorted_rows[0]
+        bottom = sorted_rows[-1]
+        if top['name'] != bottom['name']:
+            act_label = activity_map.get(activity_param, 'Overall')
+            comparison = (
+                f"{top['name']} leads on {act_label} at {top['metric_val']:.0f}%, "
+                f"compared to {bottom['name']} at {bottom['metric_val']:.0f}%."
+            )
+
+    founder_data = {
+        'rows':           founder_rows,
+        'week_options':   week_options,
+        'selected_week':  selected_week,
+        'coach_param':    coach_param,
+        'activity_param': activity_param,
+        'activity_map':   activity_map,
+        'comparison':     comparison,
+    }
+
     return render_template('index.html', coaches=COACHES, founders=FOUNDERS,
-                           greeting=greeting)
+                           greeting=greeting, founder_data=founder_data)
 
 
 @app.route('/select_name', methods=['POST'])
@@ -366,6 +507,7 @@ def add_client(name):
             db.session.add(ClientBaseline(
                 client_id=client.id, activity=b.activity, label=b.label,
                 value=int(raw) if raw.isdigit() else b.value))
+        audit('add_client', f'Client: {cname}', f'Added to {name} roster, start {sd_str}')
         db.session.commit()
         flash(f'Client "{cname}" added.', 'success')
         return redirect(url_for('coach', name=name))
@@ -400,6 +542,7 @@ def edit_client(cid):
             else:   db.session.add(ClientBaseline(
                         client_id=client.id, activity=b.activity,
                         label=b.label, value=val))
+        audit('edit_client', f'Client: {client.name}', 'Details updated')
         db.session.commit()
         flash('Client updated.', 'success')
         return redirect(url_for('client_weeks', cid=client.id))
@@ -416,9 +559,29 @@ def archive_client(cid):
         return redirect(url_for('coach', name=session['name']))
     name = client.coach_name
     client.active = False
+    audit('archive_client', f'Client: {client.name}', 'Archived')
     db.session.commit()
     flash(f'"{client.name}" archived.', 'info')
     return redirect(url_for('coach', name=name))
+
+
+@app.route('/client/<int:cid>/delete', methods=['POST'])
+@login_required
+def delete_client(cid):
+    client = Client.query.get_or_404(cid)
+    if not can_write_client(client):
+        flash('You can only delete your own clients.', 'danger')
+        return redirect(url_for('coach', name=session['name']))
+    coach_name  = client.coach_name
+    client_name = client.name
+    # Explicitly delete WeeklyLog records first
+    WeeklyLog.query.filter_by(client_id=cid).delete()
+    audit('delete_client', f'Client: {client_name}',
+          f'Permanently deleted from {coach_name}')
+    db.session.delete(client)
+    db.session.commit()
+    flash(f'"{client_name}" permanently deleted.', 'danger')
+    return redirect(url_for('coach', name=coach_name))
 
 
 # ── Weekly logs ───────────────────────────────────────────────────────────────
@@ -464,6 +627,7 @@ def log_week(cid, week_date):
         client.module_1_done = 'module_1' in request.form
         client.module_2_done = 'module_2' in request.form
         client.module_3_done = 'module_3' in request.form
+        is_new = log is None
         if log:
             log.comments=comments; log.posts=posts; log.outreach=outreach
             log.applications=applications; log.follow_ups=follow_ups
@@ -474,6 +638,12 @@ def log_week(cid, week_date):
                             applications=applications, follow_ups=follow_ups,
                             notes=notes)
             db.session.add(log)
+        if is_new:
+            audit('log_week', f'Client: {client.name}',
+                  f'Week {ws.strftime("%d %b")} logged – comments:{comments} posts:{posts} outreach:{outreach} apps:{applications}')
+        else:
+            audit('edit_log', f'Client: {client.name}',
+                  f'Week {ws.strftime("%d %b")} updated')
         db.session.commit()
         low = [{'label': lbl, 'actual': actual, 'target': tgt, 'pct': actual/tgt*100}
                for _, lbl, actual, tgt in [
@@ -504,6 +674,8 @@ def delete_log(cid, week_date):
     except: return redirect(url_for('client_weeks', cid=cid))
     log = WeeklyLog.query.filter_by(client_id=cid, week_start=ws).first()
     if log:
+        audit('delete_log', f'Client: {client.name}',
+              f'Week {ws.strftime("%d %b")} deleted')
         db.session.delete(log)
         db.session.commit()
         flash(f'Log for week of {ws.strftime("%d %b")} deleted.', 'info')
@@ -570,7 +742,8 @@ def client_report(cid):
     except: pass
     try: to_ws   = date.fromisoformat(request.args['to_week'])
     except: pass
-    data = build_report_data(client, from_ws, to_ws)
+    data    = build_report_data(client, from_ws, to_ws)
+    summary = generate_summary(client.name, data['averages'])
     return render_template('report.html',
                            client=client,
                            baselines=data['baselines'],
@@ -578,6 +751,7 @@ def client_report(cid):
                            all_weeks=all_weeks,
                            from_ws=from_ws, to_ws=to_ws,
                            averages=data['averages'],
+                           summary=summary,
                            report_json=json.dumps(data),
                            generated=datetime.now(),
                            can_write=can_write_client(client))
@@ -598,6 +772,8 @@ def save_report(cid):
         client_id=cid, sent_by=session['name'],
         from_week=from_ws, to_week=to_ws,
         report_json=json.dumps(data)))
+    audit('mark_sent', f'Client: {client.name}',
+          f'Report {from_ws}–{to_ws} marked sent')
     db.session.commit()
     flash(f'Report snapshot saved — marked as sent by {session["name"]}.', 'success')
     return redirect(url_for('client_report', cid=cid,
@@ -623,6 +799,30 @@ def view_sent_report(cid, rid):
                            client=client, rs=rs, data=data,
                            rows=rows_with_dates(data['rows']),
                            baselines=data['baselines'])
+
+
+# ── Audit Log ─────────────────────────────────────────────────────────────────
+
+@app.route('/audit-log')
+def audit_log_view():
+    # Purge entries older than 30 days
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    AuditLog.query.filter(AuditLog.timestamp < cutoff).delete()
+    db.session.commit()
+
+    coach_filter = request.args.get('coach', '')
+    q = AuditLog.query
+    if coach_filter:
+        q = q.filter(AuditLog.actor == coach_filter)
+    entries = q.order_by(AuditLog.timestamp.desc()).limit(200).all()
+
+    all_actors = [r[0] for r in db.session.query(AuditLog.actor).distinct().all()]
+
+    return render_template('audit_log.html',
+                           entries=entries,
+                           all_actors=all_actors,
+                           coach_filter=coach_filter,
+                           coaches=COACHES + FOUNDERS)
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────

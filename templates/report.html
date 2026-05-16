@@ -8,20 +8,20 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
       <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
-        &#8592; All Weeks — {{ client.name }}
+        ← All Weeks — {{ client.name }}
       </a>
       <h3 class="mb-0 mt-1">Progress Report</h3>
     </div>
     <div class="d-flex gap-2">
-      <button onclick="window.print()" class="btn btn-outline-primary">&#128438; Print / PDF</button>
+      <button onclick="window.print()" class="btn btn-outline-primary">🖨 Print / PDF</button>
       <form action="/client/{{ client.id }}/report/save" method="post" class="d-inline"
             onsubmit="return confirm('Save a snapshot of this report and mark it as sent to {{ client.name }}?')">
         <input type="hidden" name="from_week" value="{{ from_ws.isoformat() }}">
         <input type="hidden" name="to_week"   value="{{ to_ws.isoformat() }}">
-        <button type="submit" class="btn btn-success">&#10003; Mark as Sent</button>
+        <button type="submit" class="btn btn-success">✓ Mark as Sent</button>
       </form>
       <a href="/client/{{ client.id }}/report/history" class="btn btn-outline-secondary">
-        &#128196; Sent History
+        📄 Sent History
       </a>
     </div>
   </div>
@@ -75,6 +75,7 @@
       <table class="table table-sm table-borderless mb-0 small">
         <tr><td class="text-muted pe-2">Client</td><td class="fw-semibold">{{ client.name }}</td></tr>
         <tr><td class="text-muted pe-2">Coach</td><td>{{ client.coach_name }}</td></tr>
+        <tr><td class="text-muted pe-2">Start Date</td><td>{{ client.start_date.strftime('%d %b %Y') }}</td></tr>
       </table>
     </div>
     <div class="col-6">
@@ -99,13 +100,23 @@
           ('Module 3: Content Ideation',      client.module_3_done)] %}
       <div class="d-flex align-items-center gap-1">
         <span class="badge {{ 'bg-success' if done else 'bg-secondary' }}">
-          {{ '&#10003;' if done else '&#9675;' }}
+          {{ '✓' if done else '○' }}
         </span>
         <span class="small {{ '' if done else 'text-muted' }}">{{ label }}</span>
       </div>
       {% endfor %}
     </div>
   </div>
+
+  <!-- Summary box -->
+  {% if summary %}
+  <div class="mb-3 p-3 rounded" style="background:#e8f4fd;border-left:4px solid #0d6efd;">
+    <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">
+      Period Summary
+    </div>
+    <p class="mb-0 small">{{ summary }}</p>
+  </div>
+  {% endif %}
 
   <!-- Table -->
   <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">

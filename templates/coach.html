@@ -11,7 +11,7 @@
   </div>
   <div class="d-flex gap-2">
     <a href="/coach/{{ coach_name }}/add_client" class="btn btn-primary btn-sm">+ Add Client</a>
-    <a href="/" class="btn btn-outline-secondary btn-sm">&#8592; Change Coach</a>
+    <a href="/" class="btn btn-outline-secondary btn-sm">← Change Coach</a>
   </div>
 </div>
 
@@ -34,7 +34,7 @@
             </small>
           </div>
           {% if log %}
-            <span class="badge bg-success">&#10003; This week logged</span>
+            <span class="badge bg-success">✓ This week logged</span>
           {% else %}
             <span class="badge bg-secondary">Not logged yet</span>
           {% endif %}
@@ -81,10 +81,16 @@
         <div class="d-flex gap-2 flex-wrap">
           <a href="/client/{{ c.id }}/log/{{ this_week.isoformat() }}"
              class="btn btn-sm {{ 'btn-outline-primary' if log else 'btn-primary' }} flex-grow-1">
-            {{ '&#9998; Edit This Week' if log else '+ Log This Week' }}
+            {{ '✎ Edit This Week' if log else '+ Log This Week' }}
           </a>
           <a href="/client/{{ c.id }}/weeks" class="btn btn-sm btn-outline-secondary">All Weeks</a>
           <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success">Report</a>
+          {% if can_write_client(c) %}
+          <form action="/client/{{ c.id }}/delete" method="post" class="d-inline"
+                onsubmit="return confirm('Permanently delete {{ c.name }} and ALL their logs and report history? This cannot be undone.')">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete client">🗑</button>
+          </form>
+          {% endif %}
         </div>
 
       </div>
