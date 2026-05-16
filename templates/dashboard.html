@@ -22,12 +22,12 @@
 <!-- ── Consolidated compliance table ── -->
 <div class="card shadow-sm mb-5">
   <div class="card-header fw-semibold bg-white d-flex justify-content-between">
-    <span>Weekly Compliance — All Coaches</span>
+    <span class="section-label" style="font-size:0.8rem;font-weight:600;text-transform:none;letter-spacing:normal;">Compliance Overview</span>
     <small class="text-muted fw-normal">Red = below 70%</small>
   </div>
   <div class="table-responsive">
     <table class="table table-bordered table-sm mb-0 text-center align-middle">
-      <thead class="table-dark">
+      <thead style="background:#0f172a;color:white;">
         <tr>
           <th class="text-start">Coach</th>
           <th>M1<br><small class="fw-normal opacity-75">CV</small></th>
@@ -53,7 +53,9 @@
           {{ cell(r.acts.applications|int) }}
           {{ cell(r.acts.follow_ups|int) }}
           <td class="fw-bold {{ 'table-danger' if r.overall < 70 else 'table-success' }}">
-            {{ r.overall }}%
+            <span class="score-pill" style="{{ 'background:#dcfce7;color:#15803d;' if r.overall >= 70 else 'background:#fee2e2;color:#dc2626;' }}">
+              {{ r.overall }}%
+            </span>
           </td>
         </tr>
         {% endfor %}
@@ -130,7 +132,7 @@
 <!-- ── Coach Activity Dashboard ── -->
 <div class="card shadow-sm mb-4">
   <div class="card-header fw-semibold bg-white d-flex align-items-center gap-2">
-    <span>📈 Team Activity This Week</span>
+    <span class="section-label" style="font-size:0.8rem;font-weight:600;text-transform:none;letter-spacing:normal;">📈 Team Activity This Week</span>
     <small class="text-muted fw-normal">— who's been active and logging</small>
   </div>
   <div class="table-responsive">

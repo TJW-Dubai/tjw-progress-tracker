@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}The Job Workshop — Progress Tracker{% endblock %}
+{% block body_class %}hero-bg{% endblock %}
 
 {% block content %}
+<div class="min-vh-100 d-flex flex-column justify-content-center py-5">
+
 <div class="text-center mb-4">
-  <h2 class="mb-1">Good {{ greeting }}!</h2>
-  <p class="text-muted mb-0">Select your name to log in, or view the live compliance overview below.</p>
+  <h1 class="fw-bold" style="color:#0f172a;">The Job Workshop</h1>
+  <p class="text-muted">Progress Tracker — select your name to continue</p>
+  <p class="text-muted mb-0 small">Good {{ greeting }}!</p>
 </div>
 
 <div class="row g-4">
@@ -13,7 +17,7 @@
   <div class="col-lg-4">
 
     <!-- Success Coaches -->
-    <div class="card shadow-sm mb-3">
+    <div class="card shadow-sm mb-3" style="border-top: 3px solid #2563eb;">
       <div class="card-header bg-primary text-white fw-semibold">
         Success Coaches
       </div>
@@ -48,7 +52,7 @@
 
   <!-- ═══ RIGHT: Live Compliance Overview ═══ -->
   <div class="col-lg-8">
-    <div class="card shadow-sm">
+    <div class="card shadow-sm" style="border-top: 3px solid #0f172a;">
       <div class="card-header fw-semibold bg-white d-flex justify-content-between align-items-center">
         <span>📈 Live Compliance Overview</span>
         <small class="text-muted fw-normal">Public — no login needed</small>
@@ -146,6 +150,8 @@
 
 </div>
 
+</div><!-- /min-vh-100 hero wrapper -->
+
 <!-- Founder password modal -->
 <div class="modal fade" id="founderModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -175,8 +181,4 @@
   </div>
 </div>
 
-<style>
-.coach-btn { transition: transform .12s, box-shadow .12s; }
-.coach-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
-</style>
 {% endblock %}
