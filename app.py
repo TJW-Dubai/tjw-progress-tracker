@@ -85,7 +85,7 @@ def week_monday(d=None):
 
 
 def week_friday(monday):
-    return monday + timedelta(days=4)
+    return monday + timedelta(days=5)  # Saturday
 
 
 def get_weeks_for_client(client):
@@ -184,7 +184,7 @@ class WeeklyLog(db.Model):
     updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     __table_args__ = (db.UniqueConstraint('client_id', 'week_start', name='uq_wl_cw'),)
 
-    def week_end(self):       return self.week_start + timedelta(days=4)
+    def week_end(self):       return self.week_start + timedelta(days=5)  # Saturday
     def follow_up_target(self): return self.applications * 2
 
     def compliance_pcts(self, baselines):
