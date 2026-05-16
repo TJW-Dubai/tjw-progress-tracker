@@ -21,6 +21,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 COACHES  = ['Shruti', 'Veena', 'Poushali', 'Anindya', 'Swati', 'Ajay']
+
+# Weighted compliance — must sum to 1.0
+WEIGHTS = {
+    'applications': 0.30,
+    'outreach':     0.25,
+    'follow_ups':   0.20,
+    'posts':        0.15,
+    'comments':     0.10,
+}
 FOUNDERS = ['Arindam', 'Poulomi']
 MANAGERS = ['Poushali']  # Cross-coach access for content & engagement
 ALERT_EMAIL = 'athejobworkshop@gmail.com'
@@ -198,7 +207,8 @@ class WeeklyLog(db.Model):
         }
 
     def overall_pct(self, baselines):
-        return round(sum(self.compliance_pcts(baselines).values()) / 5, 1)
+        p = self.compliance_pcts(baselines)
+        return round(sum(p[k] * w for k, w in WEIGHTS.items()), 1)
 
     def statuses(self, baselines):
         return {
@@ -393,7 +403,7 @@ def index():
                 target[a] += bl[a]
         _p = lambda a: pct(actual[a], target[a]) if target[a] else 0.0
         act_pcts = {a: _p(a) for a in acts}
-        act_pcts['overall'] = round(sum(act_pcts.values()) / len(acts), 1)
+        act_pcts['overall'] = round(sum(act_pcts[k] * w for k, w in WEIGHTS.items()), 1)
 
         if activity_param in act_pcts:
             metric_val = act_pcts[activity_param]
@@ -890,7 +900,7 @@ def dashboard():
             'client_rows': client_rows,
             'm1': _mp(m1), 'm2': _mp(m2), 'm3': _mp(m3),
             'acts': act_pcts,
-            'overall': round(sum(act_pcts.values()) / len(acts), 1),
+            'overall': round(sum(act_pcts[k] * w for k, w in WEIGHTS.items()), 1),
         })
 
     # Coach activity — visible to everyone (creates healthy competition)
