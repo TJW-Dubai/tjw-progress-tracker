@@ -16,6 +16,7 @@
   <div class="d-flex gap-2 flex-wrap">
     <a href="/client/{{ client.id }}/report" class="btn btn-success btn-sm">⬇ Report</a>
     <a href="/client/{{ client.id }}/report/history" class="btn btn-outline-secondary btn-sm">📄 Sent History</a>
+    <a href="/client/{{ client.id }}/events" class="btn btn-outline-primary btn-sm">🎯 Interviews & Placement</a>
     {% if can_write %}
     <a href="/client/{{ client.id }}/edit" class="btn btn-outline-secondary btn-sm">✎ Edit</a>
     <form action="/client/{{ client.id }}/delete" method="post" class="d-inline"

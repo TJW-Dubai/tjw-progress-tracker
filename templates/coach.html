@@ -40,6 +40,28 @@
           {% endif %}
         </div>
 
+        <!-- Risk / trend / placement badges -->
+        <div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
+          {% if card.is_at_risk %}
+          <span class="badge bg-danger">⚠ At Risk</span>
+          {% endif %}
+          {% if card.is_placed %}
+          <span class="badge bg-success">🏆 Placed</span>
+          {% endif %}
+          {% if card.trend_direction == 'up' %}
+          <span class="badge bg-success" title="Compliance improving">↑ Trending Up</span>
+          {% elif card.trend_direction == 'down' %}
+          <span class="badge bg-danger" title="Compliance declining">↓ Trending Down</span>
+          {% elif card.trend_direction == 'flat' %}
+          <span class="badge bg-secondary" title="Compliance stable">→ Stable</span>
+          {% endif %}
+          {% if card.trend_data|length > 1 %}
+          <span class="text-muted small">
+            {% for p in card.trend_data[:4] %}{{ p|int }}%{% if not loop.last %} · {% endif %}{% endfor %}
+          </span>
+          {% endif %}
+        </div>
+
         <!-- Module badges -->
         <div class="mb-2">
           <span class="badge {{ 'bg-success' if c.module_1_done else 'bg-light text-dark border' }}">M1</span>
@@ -85,6 +107,7 @@
           </a>
           <a href="/client/{{ c.id }}/weeks" class="btn btn-sm btn-outline-secondary">All Weeks</a>
           <a href="/client/{{ c.id }}/report" class="btn btn-sm btn-outline-success">Report</a>
+          <a href="/client/{{ c.id }}/events" class="btn btn-sm btn-outline-secondary">🎯 Interviews</a>
           {% if card.can_write %}
           <form action="/client/{{ c.id }}/delete" method="post" class="d-inline"
                 onsubmit="return confirm('Permanently delete {{ c.name }} and ALL their logs and report history? This cannot be undone.')">

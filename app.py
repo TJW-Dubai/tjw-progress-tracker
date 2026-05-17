@@ -144,6 +144,9 @@ class Client(db.Model):
                                        lazy=True, cascade='all, delete-orphan')
     sent_reports     = db.relationship('ReportSent', backref='client',
                                        lazy=True, order_by='ReportSent.sent_at.desc()')
+    events           = db.relationship('InterviewEvent', backref='client', lazy=True,
+                                       order_by='InterviewEvent.event_date.desc()',
+                                       cascade='all, delete-orphan')
 
     def get_baselines(self):
         if self.client_baselines:
@@ -155,6 +158,41 @@ class Client(db.Model):
 
     def current_week_log(self):
         return self.get_week_log(week_monday())
+
+    def is_at_risk(self):
+        """True if the last 2 consecutive LOGGED weeks are both below 70% compliance."""
+        baselines = self.get_baselines()
+        weeks = get_weeks_for_client(self)
+        logged_pcts = []
+        for ws, _ in reversed(weeks):
+            log = self.get_week_log(ws)
+            if log:
+                logged_pcts.append(log.overall_pct(baselines))
+            if len(logged_pcts) >= 2:
+                break
+        return len(logged_pcts) >= 2 and all(p < 70 for p in logged_pcts)
+
+    def trend_data(self):
+        """Returns up to 4 most recent logged compliance percentages, newest first."""
+        baselines = self.get_baselines()
+        result = []
+        for ws, _ in reversed(get_weeks_for_client(self)):
+            log = self.get_week_log(ws)
+            if log:
+                result.append(log.overall_pct(baselines))
+            if len(result) >= 4:
+                break
+        return result
+
+    def trend_direction(self):
+        """Returns 'up', 'down', 'flat', or 'new' based on last 2 logged weeks."""
+        data = self.trend_data()
+        if len(data) < 2:
+            return 'new'
+        diff = data[0] - data[1]
+        if diff > 3:   return 'up'
+        if diff < -3:  return 'down'
+        return 'flat'
 
     def weeks_progress(self):
         baselines = self.get_baselines()
@@ -239,6 +277,20 @@ class ReportSent(db.Model):
     report_json = db.Column(db.Text, nullable=False)
 
 
+class InterviewEvent(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    client_id  = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    event_type = db.Column(db.String(20), nullable=False)  # interview / offer / placed / rejected
+    company    = db.Column(db.String(200), nullable=False)
+    role       = db.Column(db.String(200), nullable=False)
+    event_date = db.Column(db.Date, nullable=False)
+    stage      = db.Column(db.String(50), default='')   # HR Screen / Technical / Final Round
+    salary     = db.Column(db.String(100), default='')  # optional, for offers/placements
+    notes      = db.Column(db.Text, default='')
+    logged_by  = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -284,6 +336,33 @@ def send_alert(coach_name, client_name, ws, low):
         with smtplib.SMTP('smtp.gmail.com', 587) as s:
             s.starttls()
             s.login(user, pwd)
+            s.sendmail(user, ALERT_EMAIL, msg.as_string())
+    except Exception:
+        pass
+
+
+def send_risk_alert(coach_name, client_name, pct1, pct2):
+    user = os.environ.get('MAIL_USERNAME')
+    pwd  = os.environ.get('MAIL_PASSWORD')
+    if not user or not pwd:
+        return
+    subject = f"🚨 At-Risk Client: {client_name} ({coach_name})"
+    body = (
+        f"At-Risk Alert\n\n"
+        f"Coach:  {coach_name}\n"
+        f"Client: {client_name}\n\n"
+        f"{client_name} has been below 70% compliance for two consecutive weeks:\n"
+        f"  This week:  {pct1:.0f}%\n"
+        f"  Last week:  {pct2:.0f}%\n\n"
+        f"Please review and follow up with the coach."
+    )
+    msg = MIMEText(body, 'plain')
+    msg['Subject'] = subject
+    msg['From']    = user
+    msg['To']      = ALERT_EMAIL
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as s:
+            s.starttls(); s.login(user, pwd)
             s.sendmail(user, ALERT_EMAIL, msg.as_string())
     except Exception:
         pass
@@ -495,12 +574,16 @@ def coach(name):
     for c in clients:
         wks = get_weeks_for_client(c)
         cards.append({
-            'client':       c,
-            'total_weeks':  len(wks),
-            'logged_weeks': sum(1 for ws, _ in wks if c.get_week_log(ws)),
-            'this_log':     c.current_week_log(),
-            'baselines':    c.get_baselines(),
-            'can_write':    can_write_client(c),
+            'client':           c,
+            'total_weeks':      len(wks),
+            'logged_weeks':     sum(1 for ws, _ in wks if c.get_week_log(ws)),
+            'this_log':         c.current_week_log(),
+            'baselines':        c.get_baselines(),
+            'can_write':        can_write_client(c),
+            'is_at_risk':       c.is_at_risk(),
+            'trend_direction':  c.trend_direction(),
+            'trend_data':       c.trend_data(),
+            'is_placed':        any(e.event_type == 'placed' for e in c.events),
         })
     return render_template('coach.html', coach_name=name, client_cards=cards,
                            this_week=this_week, this_week_end=week_friday(this_week))
@@ -684,6 +767,10 @@ def log_week(cid, week_date):
                    ('f','Follow-ups',  follow_ups,   applications*2),
                ] if tgt > 0 and actual/tgt < 0.7]
         if low: send_alert(client.coach_name, client.name, ws, low)
+        # At-risk check — fires if last 2 logged weeks are both below 70
+        data = client.trend_data()
+        if len(data) >= 2 and all(p < 70 for p in data[:2]):
+            send_risk_alert(client.coach_name, client.name, data[0], data[1])
         flash(f'Saved — {client.name}, week of {ws.strftime("%d %b")}.', 'success')
         return redirect(url_for('client_weeks', cid=cid))
 
@@ -831,6 +918,64 @@ def view_sent_report(cid, rid):
                            baselines=data['baselines'])
 
 
+# ── Interview / Placement Events ──────────────────────────────────────────────
+
+@app.route('/client/<int:cid>/events')
+@login_required
+def client_events(cid):
+    client = Client.query.get_or_404(cid)
+    events = InterviewEvent.query.filter_by(client_id=cid)\
+               .order_by(InterviewEvent.event_date.desc()).all()
+    return render_template('client_events.html', client=client, events=events,
+                           can_write=can_write_client(client),
+                           today=date.today().isoformat())
+
+
+@app.route('/client/<int:cid>/events/add', methods=['POST'])
+@login_required
+def add_event(cid):
+    client = Client.query.get_or_404(cid)
+    if not can_write_client(client):
+        flash('You can only add events for your own clients.', 'danger')
+        return redirect(url_for('client_events', cid=cid))
+    try:
+        ev = InterviewEvent(
+            client_id  = cid,
+            event_type = request.form.get('event_type', 'interview'),
+            company    = request.form.get('company', '').strip(),
+            role       = request.form.get('role', '').strip(),
+            event_date = date.fromisoformat(request.form.get('event_date')),
+            stage      = request.form.get('stage', '').strip(),
+            salary     = request.form.get('salary', '').strip(),
+            notes      = request.form.get('notes', '').strip(),
+            logged_by  = session['name'],
+        )
+        db.session.add(ev)
+        audit('add_event', f'Client: {client.name}',
+              f'{ev.event_type} at {ev.company} — {ev.role}')
+        db.session.commit()
+        flash('Event logged successfully.', 'success')
+    except Exception as e:
+        flash(f'Error saving event: {e}', 'danger')
+    return redirect(url_for('client_events', cid=cid))
+
+
+@app.route('/client/<int:cid>/events/<int:eid>/delete', methods=['POST'])
+@login_required
+def delete_event(cid, eid):
+    client = Client.query.get_or_404(cid)
+    if not can_write_client(client):
+        flash('Access denied.', 'danger')
+        return redirect(url_for('client_events', cid=cid))
+    ev = InterviewEvent.query.get_or_404(eid)
+    audit('delete_event', f'Client: {client.name}',
+          f'Deleted {ev.event_type} at {ev.company}')
+    db.session.delete(ev)
+    db.session.commit()
+    flash('Event deleted.', 'info')
+    return redirect(url_for('client_events', cid=cid))
+
+
 # ── Audit Log ─────────────────────────────────────────────────────────────────
 
 @app.route('/audit-log')
@@ -901,6 +1046,8 @@ def dashboard():
             'm1': _mp(m1), 'm2': _mp(m2), 'm3': _mp(m3),
             'acts': act_pcts,
             'overall': round(sum(act_pcts[k] * w for k, w in WEIGHTS.items()), 1),
+            'at_risk': sum(1 for c in clients if c.is_at_risk()),
+            'placed':  sum(1 for c in clients if any(e.event_type == 'placed' for e in c.events)),
         })
 
     # Coach activity — visible to everyone (creates healthy competition)

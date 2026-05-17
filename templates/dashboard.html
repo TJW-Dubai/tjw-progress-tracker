@@ -80,6 +80,12 @@
     {% else %}
       <span class="badge bg-warning text-dark">{{ r.total - r.logged }}/{{ r.total }} not yet logged</span>
     {% endif %}
+    {% if r.at_risk > 0 %}
+    <span class="badge bg-danger ms-1">⚠ {{ r.at_risk }} at risk</span>
+    {% endif %}
+    {% if r.placed > 0 %}
+    <span class="badge bg-success ms-1">🏆 {{ r.placed }} placed</span>
+    {% endif %}
   </div>
   {% if r.client_rows %}
   <div class="table-responsive">
@@ -88,6 +94,7 @@
         <tr>
           <th>Client</th>
           <th class="text-center">Modules</th>
+          <th class="text-center">Trend</th>
           <th class="text-center">Comments</th>
           <th class="text-center">Posts</th>
           <th class="text-center">Outreach</th>
@@ -105,6 +112,14 @@
             <span class="badge {{ 'bg-success' if c.module_1_done else 'bg-light text-dark border' }}" title="CV">M1</span>
             <span class="badge {{ 'bg-success' if c.module_2_done else 'bg-light text-dark border' }}" title="LinkedIn">M2</span>
             <span class="badge {{ 'bg-success' if c.module_3_done else 'bg-light text-dark border' }}" title="Content">M3</span>
+          </td>
+          <td class="text-center">
+            {% set td = c.trend_direction() %}
+            {% if td == 'up' %}<span class="text-success fw-bold">↑</span>
+            {% elif td == 'down' %}<span class="text-danger fw-bold">↓</span>
+            {% elif td == 'flat' %}<span class="text-muted">→</span>
+            {% else %}<span class="text-muted small">new</span>{% endif %}
+            {% if c.is_at_risk() %}<span class="badge bg-danger ms-1 small">risk</span>{% endif %}
           </td>
           {% if log %}{% set s = cr.statuses %}
           <td class="text-center"><span class="badge bg-{{ s.comments }}">{{ log.comments }}</span></td>

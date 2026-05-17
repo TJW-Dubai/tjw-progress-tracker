@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} — Interviews & Placement{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <a href="/client/{{ client.id }}/weeks" class="text-muted text-decoration-none small">
+      ← {{ client.name }} — All Weeks
+    </a>
+    <h3 class="mb-0 mt-1">{{ client.name }} — Interviews & Placement</h3>
+    <small class="text-muted">Coach: {{ client.coach_name }}</small>
+  </div>
+</div>
+
+{% if can_write %}
+<!-- Log New Event form -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold bg-white">Log New Event</div>
+  <div class="card-body">
+    <form action="/client/{{ client.id }}/events/add" method="post" id="eventForm">
+
+      <div class="row g-3">
+        <!-- Event Type -->
+        <div class="col-sm-6 col-md-3">
+          <label class="form-label fw-medium">Event Type</label>
+          <select name="event_type" id="eventType" class="form-select" required>
+            <option value="interview">Interview</option>
+            <option value="offer">Offer Received</option>
+            <option value="placed">Placed</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        <!-- Company -->
+        <div class="col-sm-6 col-md-3">
+          <label class="form-label fw-medium">Company</label>
+          <input type="text" name="company" class="form-control" required
+                 placeholder="e.g. Google, HSBC, Noon">
+        </div>
+
+        <!-- Role -->
+        <div class="col-sm-6 col-md-3">
+          <label class="form-label fw-medium">Role</label>
+          <input type="text" name="role" class="form-control" required
+                 placeholder="e.g. Senior Product Manager">
+        </div>
+
+        <!-- Date -->
+        <div class="col-sm-6 col-md-3">
+          <label class="form-label fw-medium">Date</label>
+          <input type="date" name="event_date" class="form-control" required
+                 value="{{ today }}">
+        </div>
+
+        <!-- Interview Stage (shown only for interview) -->
+        <div class="col-sm-6 col-md-3" id="stageField">
+          <label class="form-label fw-medium">Interview Stage</label>
+          <select name="stage" class="form-select">
+            <option value="">— Select —</option>
+            <option value="HR Screen">HR Screen</option>
+            <option value="Technical Round">Technical Round</option>
+            <option value="Final Round">Final Round</option>
+            <option value="Panel">Panel</option>
+          </select>
+        </div>
+
+        <!-- Salary (shown only for offer/placed) -->
+        <div class="col-sm-6 col-md-3" id="salaryField" style="display:none;">
+          <label class="form-label fw-medium">Salary Range</label>
+          <input type="text" name="salary" class="form-control"
+                 placeholder="e.g. AED 25,000/month">
+        </div>
+
+        <!-- Notes -->
+        <div class="col-12">
+          <label class="form-label fw-medium">Notes</label>
+          <textarea name="notes" class="form-control" rows="2"
+                    placeholder="Optional notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Save Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Timeline -->
+<h5 class="mb-3">Event Timeline</h5>
+
+{% if events %}
+<div class="d-flex flex-column gap-3">
+  {% for ev in events %}
+  {% if ev.event_type == 'interview' %}
+    {% set border_color = '#2563eb' %}
+    {% set badge_class = 'bg-primary' %}
+    {% set type_label = 'Interview' %}
+  {% elif ev.event_type == 'offer' %}
+    {% set border_color = '#d97706' %}
+    {% set badge_class = 'bg-warning text-dark' %}
+    {% set type_label = 'Offer Received' %}
+  {% elif ev.event_type == 'placed' %}
+    {% set border_color = '#16a34a' %}
+    {% set badge_class = 'bg-success' %}
+    {% set type_label = 'Placed' %}
+  {% else %}
+    {% set border_color = '#64748b' %}
+    {% set badge_class = 'bg-secondary' %}
+    {% set type_label = 'Rejected' %}
+  {% endif %}
+  <div class="card shadow-sm" style="border-left: 4px solid {{ border_color }};">
+    <div class="card-body py-3">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <span class="badge {{ badge_class }} me-2">{{ type_label }}</span>
+          <strong>{{ ev.company }}</strong>
+          <span class="text-muted mx-1">·</span>
+          <span>{{ ev.role }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-muted">{{ ev.event_date.strftime('%d %b %Y') }}</small>
+          {% if can_write %}
+          <form action="/client/{{ client.id }}/events/{{ ev.id }}/delete" method="post"
+                class="d-inline"
+                onsubmit="return confirm('Delete this event? This cannot be undone.')">
+            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2"
+                    title="Delete event">🗑</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if ev.stage or ev.salary %}
+      <div class="mt-1 small text-muted">
+        {% if ev.stage %}<span class="me-3">Stage: {{ ev.stage }}</span>{% endif %}
+        {% if ev.salary %}<span>Salary: {{ ev.salary }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if ev.notes %}
+      <div class="mt-1 small text-secondary">{{ ev.notes }}</div>
+      {% endif %}
+      <div class="mt-1">
+        <small class="text-muted">Logged by {{ ev.logged_by }}</small>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-4">
+  <p>No events logged yet.</p>
+  {% if can_write %}
+  <p class="small">Use the form above to log an interview, offer, or placement.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+  (function () {
+    var typeSelect  = document.getElementById('eventType');
+    var stageField  = document.getElementById('stageField');
+    var salaryField = document.getElementById('salaryField');
+
+    function updateFields() {
+      var v = typeSelect ? typeSelect.value : '';
+      if (stageField)  stageField.style.display  = (v === 'interview') ? '' : 'none';
+      if (salaryField) salaryField.style.display  = (v === 'offer' || v === 'placed') ? '' : 'none';
+    }
+
+    if (typeSelect) {
+      typeSelect.addEventListener('change', updateFields);
+      updateFields();
+    }
+  })();
+</script>
+{% endblock %}
