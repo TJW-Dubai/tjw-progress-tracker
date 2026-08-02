@@ -33,7 +33,7 @@ if database_url.startswith('postgresql://'):
 
 db = SQLAlchemy(app)
 
-COACHES  = ['Shruti', 'Veena', 'Poushali', 'Anindya', 'Swati', 'Ajay']
+COACHES  = ['Shruti', 'Veena', 'Poushali', 'Anindya', 'Swati', 'Ajay', 'Ruchira', 'Megha']
 
 # Weighted compliance — must sum to 1.0
 WEIGHTS = {
