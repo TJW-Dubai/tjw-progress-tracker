@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import OperationalError
 from datetime import date, datetime, timedelta
 from functools import wraps
 import smtplib
 from email.mime.text import MIMEText
 import json
 import os
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tjw-dev-secret')
@@ -17,6 +19,17 @@ if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Render recycles the Postgres instance independently of the web service, which
+# leaves dead connections sitting in the pool. pool_pre_ping tests a connection
+# before handing it out, pool_recycle retires ones older than the idle timeout,
+# and connect_timeout stops a request hanging for minutes on an unreachable host.
+if database_url.startswith('postgresql://'):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 280,
+        'connect_args': {'connect_timeout': 10},
+    }
 
 db = SQLAlchemy(app)
 
@@ -1102,12 +1115,78 @@ def settings_save():
 
 # ── Seed ──────────────────────────────────────────────────────────────────────
 
-with app.app_context():
+def _init_db():
+    """Create tables and seed the default baselines."""
     db.create_all()
     if Baseline.query.count() == 0:
         for b in DEFAULT_BASELINES:
             db.session.add(Baseline(**b))
         db.session.commit()
+
+
+_db_ready = False
+_last_init_attempt = 0.0
+INIT_RETRY_SECONDS = 15
+
+
+def try_init_db():
+    """Initialise the database, tolerating one that is not accepting connections yet.
+
+    Render brings the web service back before the Postgres instance has finished
+    resuming, so at import time the database often refuses connections. Letting
+    that exception escape kills the gunicorn worker, which fails the whole deploy
+    with a 502 that never recovers on its own — the service stays down even after
+    the database is healthy again, until someone manually redeploys. So a failure
+    here is logged instead, and retried on later requests."""
+    global _db_ready, _last_init_attempt
+    if _db_ready:
+        return True
+    _last_init_attempt = time.monotonic()
+    try:
+        with app.app_context():
+            _init_db()
+        _db_ready = True
+        app.logger.info('Database ready.')
+    except OperationalError as exc:
+        app.logger.warning('Database not reachable yet: %s', exc)
+    return _db_ready
+
+
+@app.before_request
+def _retry_db_init():
+    """Pick the database up as soon as it comes back, without a redeploy."""
+    if not _db_ready and time.monotonic() - _last_init_attempt > INIT_RETRY_SECONDS:
+        try_init_db()
+
+
+@app.errorhandler(OperationalError)
+def _database_unavailable(exc):
+    """Show coaches a plain 'starting up' page rather than a raw traceback."""
+    global _db_ready
+    _db_ready = False  # force a fresh init once the database answers again
+    db.session.rollback()
+    app.logger.error('Database error while serving %s: %s', request.path, exc)
+    return render_template('db_unavailable.html'), 503
+
+
+@app.route('/healthz')
+def healthz():
+    """Deploy/uptime probe: reports whether the database is actually reachable."""
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return {'status': 'ok', 'database': 'up'}, 200
+    except OperationalError:
+        return {'status': 'degraded', 'database': 'down'}, 503
+
+
+# Retry a few times at boot so a database that is still waking up does not fail
+# the deploy, but never block startup long enough to trip the gunicorn timeout.
+for _attempt in range(3):
+    if try_init_db():
+        break
+    time.sleep(3)
+else:
+    app.logger.warning('Starting without a database; will keep retrying on requests.')
 
 if __name__ == '__main__':
     app.run(debug=True)
